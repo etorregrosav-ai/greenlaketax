@@ -56,3 +56,5 @@ Todo el contenido de servicios (Inmuebles, Empresas, Trabajar en España, Ley Be
 
 - **Logo (ciervo):** silueta original de Matt Todd / Openclipart (2010), dominio público (CC0 1.0), vía [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Deer_Matt_Todd_01.svg). Adaptada de relleno sólido a trazo de línea. Uso comercial permitido sin atribución.
 - **Imagen de cabecera (lago):** generada por el usuario con Gemini.
+
+<!-- deploy check 2026-08-13T19:08:28Z -->
