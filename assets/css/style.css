@@ -268,6 +268,7 @@ button { font-family: inherit; cursor: pointer; }
   content: '';
   position: absolute; inset: 0;
   background: radial-gradient(ellipse 700px 400px at 90% 0%, rgba(180,146,76,0.14), transparent 60%);
+  pointer-events: none;
 }
 .page-hero .breadcrumb {
   position: relative;
@@ -366,6 +367,7 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 50%;
   background: radial-gradient(circle, rgba(180,146,76,0.18), transparent 70%);
   top: -140px; right: -80px;
+  pointer-events: none;
 }
 .cta-band h2 { color: var(--paper); font-size: 1.6rem; margin-bottom: 0.3em; position: relative; }
 .cta-band p { color: rgba(247,244,236,0.78); margin-bottom: 0; position: relative; max-width: 440px; }
