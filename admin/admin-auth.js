@@ -9,6 +9,8 @@ async function requireSession() {
     window.location.href = "login.html";
     return null;
   }
+  const emailEl = document.getElementById("user-email");
+  if (emailEl) emailEl.textContent = session.user.email;
   return session;
 }
 
