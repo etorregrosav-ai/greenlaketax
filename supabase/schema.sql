@@ -53,6 +53,18 @@ create table if not exists public.client_obligations (
   unique (client_id, obligation_type_id)
 );
 
+create table if not exists public.obligation_filings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  obligation_type_id uuid not null references public.obligation_types(id) on delete cascade,
+  period_label text not null, -- p.ej. "1ºT 2026" o "2026", igual que period_label en admin/deadlines.js
+  filed boolean not null default false,
+  filed_date date,
+  created_at timestamptz not null default now(),
+  unique (client_id, obligation_type_id, period_label)
+);
+
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -74,6 +86,7 @@ create table if not exists public.documents (
 alter table public.clients enable row level security;
 alter table public.obligation_types enable row level security;
 alter table public.client_obligations enable row level security;
+alter table public.obligation_filings enable row level security;
 alter table public.documents enable row level security;
 
 create policy "clients_owner_all" on public.clients
@@ -83,6 +96,9 @@ create policy "obligation_types_owner_all" on public.obligation_types
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 create policy "client_obligations_owner_all" on public.client_obligations
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create policy "obligation_filings_owner_all" on public.obligation_filings
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 create policy "documents_owner_all" on public.documents
@@ -98,6 +114,8 @@ create index if not exists idx_client_obligations_client on public.client_obliga
 create index if not exists idx_client_obligations_user on public.client_obligations(user_id);
 create index if not exists idx_documents_client on public.documents(client_id);
 create index if not exists idx_documents_user on public.documents(user_id);
+create index if not exists idx_obligation_filings_client on public.obligation_filings(client_id);
+create index if not exists idx_obligation_filings_user on public.obligation_filings(user_id);
 
 -- ============================================================
 -- ALMACENAMIENTO: bucket "client-documents" (crear primero desde

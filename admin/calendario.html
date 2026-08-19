@@ -39,7 +39,13 @@
     </div>
 
     <div class="admin-card">
-      <div id="calendar-summary" style="margin-bottom:18px; color:var(--ink-soft); font-size:0.94rem;"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+        <div id="calendar-summary" style="color:var(--ink-soft); font-size:0.94rem;"></div>
+        <div class="lang-switch" style="border:1px solid var(--line);">
+          <a href="#" id="view-list-btn" class="active">Lista</a>
+          <a href="#" id="view-table-btn">Tabla</a>
+        </div>
+      </div>
       <div id="calendar-container">Cargando…</div>
     </div>
   </main>
@@ -50,6 +56,8 @@
 <script>
   let viewDate = new Date();
   viewDate.setDate(1);
+  let currentView = "list";
+  let lastMatrixCells = []; // para poder togglear sin recargar
 
   (async () => {
     const session = await requireSession();
@@ -70,6 +78,22 @@
     viewDate.setDate(1);
     renderMonth();
   });
+
+  document.getElementById("view-list-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    setView("list");
+  });
+  document.getElementById("view-table-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    setView("table");
+  });
+
+  function setView(view) {
+    currentView = view;
+    document.getElementById("view-list-btn").classList.toggle("active", view === "list");
+    document.getElementById("view-table-btn").classList.toggle("active", view === "table");
+    renderMonth();
+  }
 
   async function renderMonth() {
     const year = viewDate.getFullYear();
@@ -99,6 +123,8 @@
     clients.forEach((c) => { clientsById[c.id] = c; });
 
     let rows = [];
+    const matrixMap = new Map(); // key "clientId|obligationId|period" -> {client, obligation, period}
+
     (obligations || []).forEach((co) => {
       const ot = co.obligation_types;
       const client = clientsById[co.client_id];
@@ -111,6 +137,8 @@
         if (inst.presentacion_end.getFullYear() === year && inst.presentacion_end.getMonth() === month) {
           rows.push({ date: inst.presentacion_end, client, obligation: ot, period: inst.period_label, kind: inst.domiciliacion_end ? "Presentación (NRC)" : "Presentación" });
         }
+        const key = client.id + "|" + ot.id + "|" + inst.period_label;
+        if (!matrixMap.has(key)) matrixMap.set(key, { client, obligation: ot, period: inst.period_label });
       });
     });
 
@@ -125,6 +153,14 @@
     summary.textContent = rows.length + " plazo" + (rows.length === 1 ? "" : "s") + " este mes, de " +
       new Set(rows.map((r) => r.client.id)).size + " cliente" + (new Set(rows.map((r) => r.client.id)).size === 1 ? "" : "s") + ".";
 
+    if (currentView === "list") {
+      renderListView(rows, container);
+    } else {
+      await renderTableView(Array.from(matrixMap.values()), container);
+    }
+  }
+
+  function renderListView(rows, container) {
     let html = "<table class='client-table'><thead><tr><th>Fecha</th><th>Cliente</th><th>Obligación</th><th>Periodo</th><th>Tipo</th></tr></thead><tbody>";
     rows.forEach((r) => {
       html += `<tr class="clickable" onclick="window.location.href='cliente.html?id=${r.client.id}'">
@@ -137,6 +173,92 @@
     });
     html += "</tbody></table>";
     container.innerHTML = html;
+  }
+
+  async function renderTableView(cells, container) {
+    container.innerHTML = "Cargando tabla…";
+
+    // Columnas = obligaciones distintas (por obligación+periodo, ya que el mismo modelo
+    // puede tener periodos distintos en meses raros; en la práctica casi siempre 1 periodo/mes)
+    const obligationCols = [];
+    const obligationColKey = (o, period) => o.id + "|" + period;
+    const seenCols = new Set();
+    cells.forEach((c) => {
+      const key = obligationColKey(c.obligation, c.period);
+      if (!seenCols.has(key)) { seenCols.add(key); obligationCols.push({ obligation: c.obligation, period: c.period }); }
+    });
+    obligationCols.sort((a, b) => a.obligation.name.localeCompare(b.obligation.name));
+
+    const clientsMap = new Map();
+    cells.forEach((c) => { clientsMap.set(c.client.id, c.client); });
+    const clientsList = Array.from(clientsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+    const cellSet = new Set(cells.map((c) => c.client.id + "|" + obligationColKey(c.obligation, c.period)));
+
+    const clientIds = clientsList.map((c) => c.id);
+    const { data: filings, error: filingsError } = await supabaseClient
+      .from("obligation_filings")
+      .select("*")
+      .in("client_id", clientIds);
+    if (filingsError) { container.textContent = "Error: " + filingsError.message; return; }
+
+    const filedSet = new Set(
+      (filings || []).filter((f) => f.filed).map((f) => f.client_id + "|" + f.obligation_type_id + "|" + f.period_label)
+    );
+
+    let html = "<div class='table-wrap'><table class='client-table'><thead><tr><th style='position:sticky;left:0;background:var(--paper);'>Cliente</th>";
+    obligationCols.forEach((col) => {
+      html += `<th style="text-align:center; white-space:nowrap;">${escapeHtml(col.obligation.name)}<div class="obl-meta" style="margin:2px 0 0;">${escapeHtml(col.period)}</div></th>`;
+    });
+    html += "</tr></thead><tbody>";
+
+    clientsList.forEach((client) => {
+      html += `<tr><td class="name" style="position:sticky;left:0;background:var(--paper);">${escapeHtml(client.name)}${client.is_self ? ' <span class="badge residente">Tú</span>' : ""}</td>`;
+      obligationCols.forEach((col) => {
+        const hasIt = cellSet.has(client.id + "|" + obligationColKey(col.obligation, col.period));
+        if (!hasIt) {
+          html += "<td style='text-align:center; color:var(--line);'>—</td>";
+        } else {
+          const filed = filedSet.has(client.id + "|" + col.obligation.id + "|" + col.period);
+          html += `<td style="text-align:center;">
+            <button class="filing-toggle" data-client="${client.id}" data-obligation="${col.obligation.id}" data-period="${escapeHtml(col.period)}"
+              style="width:28px;height:28px;border-radius:50%;border:1px solid ${filed ? "var(--lake-green)" : "var(--line)"};background:${filed ? "var(--lake-green)" : "transparent"};color:${filed ? "var(--paper)" : "var(--ink-faint)"};cursor:pointer;font-weight:700;">
+              ${filed ? "✓" : "✕"}
+            </button>
+          </td>`;
+        }
+      });
+      html += "</tr>";
+    });
+    html += "</tbody></table></div><p class='sub' style='margin-top:14px;'>✕ = pendiente de presentar · pulsa para marcar como presentado (✓). Vuelve a pulsar para desmarcar.</p>";
+
+    container.innerHTML = html;
+
+    container.querySelectorAll(".filing-toggle").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const clientId = btn.dataset.client;
+        const obligationId = btn.dataset.obligation;
+        const period = btn.dataset.period;
+        const isFiled = btn.textContent.trim() === "✓";
+        const newFiled = !isFiled;
+
+        btn.disabled = true;
+        const { error } = await supabaseClient
+          .from("obligation_filings")
+          .upsert(
+            [{ client_id: clientId, obligation_type_id: obligationId, period_label: period, filed: newFiled, filed_date: newFiled ? new Date().toISOString().slice(0, 10) : null }],
+            { onConflict: "client_id,obligation_type_id,period_label" }
+          );
+        btn.disabled = false;
+
+        if (error) { alert("Error al guardar: " + error.message); return; }
+
+        btn.textContent = newFiled ? "✓" : "✕";
+        btn.style.border = "1px solid " + (newFiled ? "var(--lake-green)" : "var(--line)");
+        btn.style.background = newFiled ? "var(--lake-green)" : "transparent";
+        btn.style.color = newFiled ? "var(--paper)" : "var(--ink-faint)";
+      });
+    });
   }
 
   function escapeHtml(str) {
