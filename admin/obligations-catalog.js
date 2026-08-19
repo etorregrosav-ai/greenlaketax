@@ -1,0 +1,100 @@
+// Green Lake — catálogo inicial de obligaciones fiscales (borrador para revisión).
+// Se carga una sola vez desde catalogo.html ("Cargar catálogo inicial") y a partir
+// de ahí vive en la base de datos, donde se puede editar/ampliar libremente.
+
+const OBLIGATIONS_SEED = [
+  // ---- IRPF / autónomos (persona física residente) ----
+  { code: "modelo_100", name: "IRPF — Declaración de la Renta", category: "IRPF", periodicity: "anual",
+    description: "Declaración anual del Impuesto sobre la Renta de las Personas Físicas.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false },
+  { code: "modelo_130", name: "Pago fraccionado IRPF (estimación directa)", category: "IRPF", periodicity: "trimestral",
+    description: "Pago a cuenta trimestral del IRPF para autónomos en estimación directa.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false },
+  { code: "modelo_131", name: "Pago fraccionado IRPF (módulos)", category: "IRPF", periodicity: "trimestral",
+    description: "Pago a cuenta trimestral del IRPF para autónomos en estimación objetiva (módulos).",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false },
+  { code: "modelo_714", name: "Impuesto sobre el Patrimonio", category: "Patrimonio", periodicity: "anual",
+    description: "Declaración anual sobre el patrimonio neto, si supera el mínimo exento autonómico.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false },
+
+  // ---- IVA ----
+  { code: "modelo_303", name: "IVA — Autoliquidación trimestral", category: "IVA", periodicity: "trimestral",
+    description: "Declaración-liquidación trimestral del IVA repercutido y soportado.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_390", name: "IVA — Resumen anual", category: "IVA", periodicity: "anual",
+    description: "Resumen anual de las declaraciones trimestrales de IVA del ejercicio.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+
+  // ---- Retenciones ----
+  { code: "modelo_111", name: "Retenciones IRPF — nóminas y profesionales", category: "Retenciones", periodicity: "trimestral",
+    description: "Retenciones e ingresos a cuenta sobre rendimientos del trabajo y de actividades profesionales pagados.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_190", name: "Resumen anual de retenciones (111)", category: "Retenciones", periodicity: "anual",
+    description: "Resumen anual de las retenciones declaradas en el modelo 111.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_115", name: "Retenciones por alquiler de local/oficina", category: "Retenciones", periodicity: "trimestral",
+    description: "Retención e ingreso a cuenta sobre las rentas de alquiler de inmuebles urbanos afectos a la actividad.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_180", name: "Resumen anual de retenciones de alquileres (115)", category: "Retenciones", periodicity: "anual",
+    description: "Resumen anual de las retenciones declaradas en el modelo 115.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_123", name: "Retenciones sobre capital mobiliario", category: "Retenciones", periodicity: "trimestral",
+    description: "Retenciones e ingresos a cuenta sobre dividendos, intereses u otros rendimientos del capital mobiliario pagados.",
+    fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false },
+  { code: "modelo_193", name: "Resumen anual retenciones capital mobiliario (123)", category: "Retenciones", periodicity: "anual",
+    description: "Resumen anual de las retenciones declaradas en el modelo 123.",
+    fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false },
+  { code: "modelo_216", name: "Retenciones practicadas a no residentes", category: "Retenciones", periodicity: "trimestral",
+    description: "Ingreso de las retenciones practicadas sobre pagos realizados a no residentes sin establecimiento permanente.",
+    fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+
+  // ---- Impuesto sobre Sociedades ----
+  { code: "modelo_200", name: "Impuesto sobre Sociedades", category: "IS", periodicity: "anual",
+    description: "Declaración anual del Impuesto sobre Sociedades. Para no residentes, aplica cuando operan mediante establecimiento permanente en España.",
+    fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_202", name: "Pago fraccionado del Impuesto sobre Sociedades", category: "IS", periodicity: "trimestral",
+    description: "Pagos a cuenta del Impuesto sobre Sociedades (abril, octubre y diciembre).",
+    fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+
+  // ---- Informativos ----
+  { code: "modelo_347", name: "Declaración de operaciones con terceros", category: "Informativo", periodicity: "anual",
+    description: "Operaciones con un mismo tercero superiores a 3.005,06€ en el año natural.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_349", name: "Operaciones intracomunitarias", category: "Informativo", periodicity: "trimestral",
+    description: "Declaración recapitulativa de entregas, adquisiciones y prestaciones de servicios intracomunitarias.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "modelo_720", name: "Bienes y derechos en el extranjero", category: "Informativo", periodicity: "anual",
+    description: "Cuentas, valores o inmuebles en el extranjero superiores a 50.000€ por bloque.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false },
+  { code: "modelo_232", name: "Operaciones vinculadas y con paraísos fiscales", category: "Informativo", periodicity: "anual",
+    description: "Información sobre operaciones con personas/entidades vinculadas y con paraísos fiscales.",
+    fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+
+  // ---- Formal / registral ----
+  { code: "modelo_036", name: "Alta, modificación o baja censal", category: "Formal", periodicity: "puntual",
+    description: "Declaración censal de inicio, modificación o cese de actividad ante la Agencia Tributaria.",
+    fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
+  { code: "cuentas_anuales", name: "Depósito de cuentas anuales", category: "Formal", periodicity: "anual",
+    description: "Depósito de las cuentas anuales en el Registro Mercantil.",
+    fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false },
+  { code: "representante_fiscal", name: "Representante fiscal en España", category: "Formal", periodicity: "puntual",
+    description: "Obligatorio en determinados supuestos para no residentes de fuera de la UE/EEE (titularidad de inmuebles, actividad económica).",
+    fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true },
+
+  // ---- No residentes: Modelo 210 (IRNR sin establecimiento permanente) ----
+  { code: "modelo_210_alquiler", name: "Modelo 210 — Rendimientos de alquiler", category: "IRNR", periodicity: "trimestral",
+    description: "IRNR trimestral sobre los ingresos por alquiler de inmuebles en España (clave 01).",
+    fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true },
+  { code: "modelo_210_imputacion", name: "Modelo 210 — Imputación de rentas inmobiliarias", category: "IRNR", periodicity: "anual",
+    description: "IRNR anual por la posesión de un inmueble en España no alquilado (uso propio o vacío), sobre el 1,1%–2% del valor catastral (clave 02).",
+    fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true },
+  { code: "modelo_210_venta", name: "Modelo 210 — Ganancia por venta de inmueble", category: "IRNR", periodicity: "puntual",
+    description: "IRNR sobre la plusvalía obtenida en la venta de un inmueble en España (clave 28), tipo general 19%.",
+    fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true },
+  { code: "modelo_210_otras_rentas", name: "Modelo 210 — Otras rentas de fuente española", category: "IRNR", periodicity: "puntual",
+    description: "Dividendos, intereses, cánones u otras rentas de fuente española obtenidas sin establecimiento permanente.",
+    fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true },
+  { code: "modelo_211", name: "Retención del 3% en compra a no residente", category: "IRNR", periodicity: "puntual",
+    description: "Retención que practica el comprador de un inmueble a un vendedor no residente, a cuenta del IRNR de este último.",
+    fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true },
+];

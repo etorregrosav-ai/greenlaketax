@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Catálogo de obligaciones — Green Lake</title>
+<link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="admin.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a href="index.html" class="logo" style="display:flex;align-items:baseline;gap:8px;font-family:var(--font-display);font-size:1.2rem;font-weight:600;"><svg class="logo-icon" viewBox="0 0 109.459 160.596" fill="none" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"><path d="m39.88 31.658c-4.248 0-8.482-0.654-12.009 1.162-2.856 1.47-8.263 1.338-11.574 1.338-1.575 0 1.458 3.56 1.412 4.764-0.131 3.474 6.903 4.228 9.046 5.136 3.307 1.402 1.927 3.643 2.208 6.516 0.752 7.669-2.076 13.171-4.781 20.015-0.817 2.068-2.41 4.971-2.21 7.277 0.361 4.163-6.169-0.659-8.078-1.331-2.917-1.027-8.387-2.464-11.47-1.204-3.956 1.616-2.348 5.16-0.255 7.475 4.001 4.428 0.534 7.907 1.726 12.557 0.426 1.663 7.787 9.32 8.963 8.305 3.848-3.321-1.394-4.976-2.753-7.504-0.618-1.149-1.489-12.422-1.239-12.405 1.152 0.078 3.725 2.108 4.805 2.633 3.218 1.562 6.395 3.238 9.292 5.349 6.193 2.729 12.58 5.224 19.139 6.935 8.983 2.344 17.305 3.327 25.907 7.329 4.911 2.284 4.041 7.277 7.735 10.999 3.678 3.705 8.989 6.049 13.234 9.049 3.424 2.42 6.444 6.255 8.356 9.945 2.217 4.281 1.737 10.006 2.504 14.676 0.531 3.236 4.54 5.647 6.464 8.185 4.169 5.496 3.558-3.747 1.861-4.447-3.193-1.318-4.172-7.787-4.351-10.973-0.287-5.103 1.756-9.108-1.894-13.093-6.814-7.439-12.43-16.164-7.207-26.604 2.178-4.354-3.52-8.245 2.229-9.374 2.611-0.512 5.55-0.001 7.386-2.334 2.313-2.939 0.737-6.691-1.383-9.236-0.257-0.381-0.584-0.677-0.981-0.889 0.369 0-0.039 5.071-0.981 5.719-2.113 1.454-5.412 3.958-8.101 4.044-2.311 0.073-6.142-2.488-7.668-4.014-1.12-1.12-5.036-1.501-6.614-1.828-3.861-0.799-6.857-1.504-10.586-3.024-4.694-1.913-9.325-4.134-13.457-7.096-9.982-7.155-11.8-19.564-10.533-31.215 0.273-2.508-0.853-6.438 0.595-8.58 0.344-0.509 1.903-0.362 2.502-0.891 0.763-0.674 2.455-3.202 2.759-4.232 1.248-4.223-5.518 1.21-4.542 1.146-1.475 0.098 1.675-9.004 1.855-9.364 0.364-0.728 5.298-9.451 2.32-9.352-1.868 0.062-0.948 5.445-3.157 5.005-2.39-0.476-5.832-6.831-4.788-9.216 1.834-4.192-1.823-5.106-2.352-1.447-0.102 0.705 1.679 5.874-1.055 5.101-2.833-0.807-2.42-12.798-3.788-12.673-2.389 0.219-0.306 10.836-1.019 12.176-0.217 0.408-3.681-3.516-3.902-4.458-0.979-4.16-1.428-2.612-2.589 0.034-1.537 3.502 10.289 9.671 12.422 10.911 1.701 0.988 3.098 1.841 3.681 3.817 0.509 1.725 1.125 4.088-0.047 5.711-0.834 1.155-3.046 1.791-3.046 3.467"/></svg>Green Lake</a>
+    <nav class="admin-nav">
+      <a href="index.html">Clientes</a>
+      <a href="catalogo.html" class="active">Catálogo de obligaciones</a>
+    </nav>
+    <button class="signout">Cerrar sesión</button>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <div>
+        <h1>Catálogo de obligaciones</h1>
+        <p class="sub">El listado maestro de modelos y obligaciones que se ofrecen al dar de alta un cliente.</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" id="load-seed-btn">Cargar catálogo inicial</button>
+        <button class="btn btn-primary" id="new-obl-btn">+ Nueva obligación</button>
+      </div>
+    </div>
+
+    <div class="admin-card" id="new-obl-card" style="display:none;">
+      <h3 style="margin-bottom:18px;" id="form-title">Nueva obligación</h3>
+      <form class="admin-form" id="obl-form">
+        <input type="hidden" id="o-id">
+        <div class="field-row">
+          <div class="field">
+            <label for="o-name">Nombre</label>
+            <input type="text" id="o-name" required>
+          </div>
+          <div class="field">
+            <label for="o-code">Código interno</label>
+            <input type="text" id="o-code" required placeholder="p.ej. modelo_210_alquiler">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="o-category">Categoría</label>
+            <input type="text" id="o-category" required placeholder="p.ej. IRNR, IVA, IS...">
+          </div>
+          <div class="field">
+            <label for="o-periodicity">Periodicidad</label>
+            <select id="o-periodicity">
+              <option value="mensual">Mensual</option>
+              <option value="trimestral">Trimestral</option>
+              <option value="anual" selected>Anual</option>
+              <option value="puntual">Puntual</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="o-desc">Descripción</label>
+          <textarea id="o-desc" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label>¿A quién aplica?</label>
+          <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:8px; font-weight:500;"><input type="checkbox" id="o-fr" style="width:auto;"> Física residente</label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:500;"><input type="checkbox" id="o-fnr" style="width:auto;"> Física no residente</label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:500;"><input type="checkbox" id="o-jr" style="width:auto;"> Jurídica residente</label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:500;"><input type="checkbox" id="o-jnr" style="width:auto;"> Jurídica no residente</label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-outline" id="cancel-obl">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="admin-card">
+      <div class="table-wrap">
+        <table class="client-table" id="obl-table" style="display:none;">
+          <thead>
+            <tr><th>Nombre</th><th>Categoría</th><th>Aplica a</th><th></th></tr>
+          </thead>
+          <tbody id="obl-tbody"></tbody>
+        </table>
+        <div class="empty-state" id="obl-empty">El catálogo está vacío. Pulsa "Cargar catálogo inicial" para partir de una base ya investigada, o crea obligaciones una a una.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="admin-auth.js"></script>
+<script src="obligations-catalog.js"></script>
+<script>
+  (async () => {
+    const session = await requireSession();
+    if (!session) return;
+    await loadCatalog();
+  })();
+
+  async function loadCatalog() {
+    const { data, error } = await supabaseClient.from("obligation_types").select("*").order("category");
+    const table = document.getElementById("obl-table");
+    const tbody = document.getElementById("obl-tbody");
+    const empty = document.getElementById("obl-empty");
+
+    if (error) { empty.textContent = "Error: " + error.message; return; }
+
+    if (!data || data.length === 0) {
+      table.style.display = "none";
+      empty.style.display = "block";
+      return;
+    }
+
+    table.style.display = "table";
+    empty.style.display = "none";
+    tbody.innerHTML = "";
+
+    data.forEach((o) => {
+      const applies = [];
+      if (o.applies_fisica_residente) applies.push("Física res.");
+      if (o.applies_fisica_no_residente) applies.push("Física no res.");
+      if (o.applies_juridica_residente) applies.push("Jurídica res.");
+      if (o.applies_juridica_no_residente) applies.push("Jurídica no res.");
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="name">${escapeHtml(o.name)}</td>
+        <td>${escapeHtml(o.category)}</td>
+        <td style="font-size:0.85rem; color:var(--ink-soft);">${applies.join(", ") || "—"}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-sm btn-outline edit-btn" data-id="${o.id}">Editar</button>
+          <button class="btn btn-sm btn-outline delete-btn" data-id="${o.id}" style="margin-left:6px;">Eliminar</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll(".edit-btn").forEach((btn) => {
+      btn.addEventListener("click", () => openForEdit(data.find((o) => o.id === btn.dataset.id)));
+    });
+    tbody.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("¿Eliminar esta obligación del catálogo? También se quitará de los clientes que la tuvieran marcada.")) return;
+        const { error } = await supabaseClient.from("obligation_types").delete().eq("id", btn.dataset.id);
+        if (error) { alert("Error: " + error.message); return; }
+        await loadCatalog();
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str || "";
+    return div.innerHTML;
+  }
+
+  const newCard = document.getElementById("new-obl-card");
+  document.getElementById("new-obl-btn").addEventListener("click", () => {
+    document.getElementById("obl-form").reset();
+    document.getElementById("o-id").value = "";
+    document.getElementById("form-title").textContent = "Nueva obligación";
+    newCard.style.display = "block";
+  });
+  document.getElementById("cancel-obl").addEventListener("click", () => { newCard.style.display = "none"; });
+
+  function openForEdit(o) {
+    if (!o) return;
+    document.getElementById("o-id").value = o.id;
+    document.getElementById("o-name").value = o.name;
+    document.getElementById("o-code").value = o.code;
+    document.getElementById("o-category").value = o.category;
+    document.getElementById("o-periodicity").value = o.periodicity;
+    document.getElementById("o-desc").value = o.description || "";
+    document.getElementById("o-fr").checked = o.applies_fisica_residente;
+    document.getElementById("o-fnr").checked = o.applies_fisica_no_residente;
+    document.getElementById("o-jr").checked = o.applies_juridica_residente;
+    document.getElementById("o-jnr").checked = o.applies_juridica_no_residente;
+    document.getElementById("form-title").textContent = "Editar obligación";
+    newCard.style.display = "block";
+    newCard.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("obl-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("o-id").value;
+    const payload = {
+      name: document.getElementById("o-name").value.trim(),
+      code: document.getElementById("o-code").value.trim(),
+      category: document.getElementById("o-category").value.trim(),
+      periodicity: document.getElementById("o-periodicity").value,
+      description: document.getElementById("o-desc").value.trim(),
+      applies_fisica_residente: document.getElementById("o-fr").checked,
+      applies_fisica_no_residente: document.getElementById("o-fnr").checked,
+      applies_juridica_residente: document.getElementById("o-jr").checked,
+      applies_juridica_no_residente: document.getElementById("o-jnr").checked,
+    };
+
+    const query = id
+      ? supabaseClient.from("obligation_types").update(payload).eq("id", id)
+      : supabaseClient.from("obligation_types").insert([payload]);
+
+    const { error } = await query;
+    if (error) { alert("Error al guardar: " + error.message); return; }
+
+    newCard.style.display = "none";
+    await loadCatalog();
+  });
+
+  document.getElementById("load-seed-btn").addEventListener("click", async () => {
+    if (!confirm("Esto añadirá " + OBLIGATIONS_SEED.length + " obligaciones ya investigadas al catálogo. Las que ya existan con el mismo código se dejarán igual. ¿Continuar?")) return;
+
+    const rows = OBLIGATIONS_SEED.map((o) => ({
+      code: o.code,
+      name: o.name,
+      description: o.description,
+      category: o.category,
+      periodicity: o.periodicity,
+      applies_fisica_residente: o.fisica_residente,
+      applies_fisica_no_residente: o.fisica_no_residente,
+      applies_juridica_residente: o.juridica_residente,
+      applies_juridica_no_residente: o.juridica_no_residente,
+    }));
+
+    const { error } = await supabaseClient
+      .from("obligation_types")
+      .upsert(rows, { onConflict: "user_id,code", ignoreDuplicates: true });
+
+    if (error) { alert("Error al cargar el catálogo: " + error.message); return; }
+    await loadCatalog();
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ficha de cliente — Green Lake</title>
+<link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="admin.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a href="index.html" class="logo" style="display:flex;align-items:baseline;gap:8px;font-family:var(--font-display);font-size:1.2rem;font-weight:600;"><svg class="logo-icon" viewBox="0 0 109.459 160.596" fill="none" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"><path d="m39.88 31.658c-4.248 0-8.482-0.654-12.009 1.162-2.856 1.47-8.263 1.338-11.574 1.338-1.575 0 1.458 3.56 1.412 4.764-0.131 3.474 6.903 4.228 9.046 5.136 3.307 1.402 1.927 3.643 2.208 6.516 0.752 7.669-2.076 13.171-4.781 20.015-0.817 2.068-2.41 4.971-2.21 7.277 0.361 4.163-6.169-0.659-8.078-1.331-2.917-1.027-8.387-2.464-11.47-1.204-3.956 1.616-2.348 5.16-0.255 7.475 4.001 4.428 0.534 7.907 1.726 12.557 0.426 1.663 7.787 9.32 8.963 8.305 3.848-3.321-1.394-4.976-2.753-7.504-0.618-1.149-1.489-12.422-1.239-12.405 1.152 0.078 3.725 2.108 4.805 2.633 3.218 1.562 6.395 3.238 9.292 5.349 6.193 2.729 12.58 5.224 19.139 6.935 8.983 2.344 17.305 3.327 25.907 7.329 4.911 2.284 4.041 7.277 7.735 10.999 3.678 3.705 8.989 6.049 13.234 9.049 3.424 2.42 6.444 6.255 8.356 9.945 2.217 4.281 1.737 10.006 2.504 14.676 0.531 3.236 4.54 5.647 6.464 8.185 4.169 5.496 3.558-3.747 1.861-4.447-3.193-1.318-4.172-7.787-4.351-10.973-0.287-5.103 1.756-9.108-1.894-13.093-6.814-7.439-12.43-16.164-7.207-26.604 2.178-4.354-3.52-8.245 2.229-9.374 2.611-0.512 5.55-0.001 7.386-2.334 2.313-2.939 0.737-6.691-1.383-9.236-0.257-0.381-0.584-0.677-0.981-0.889 0.369 0-0.039 5.071-0.981 5.719-2.113 1.454-5.412 3.958-8.101 4.044-2.311 0.073-6.142-2.488-7.668-4.014-1.12-1.12-5.036-1.501-6.614-1.828-3.861-0.799-6.857-1.504-10.586-3.024-4.694-1.913-9.325-4.134-13.457-7.096-9.982-7.155-11.8-19.564-10.533-31.215 0.273-2.508-0.853-6.438 0.595-8.58 0.344-0.509 1.903-0.362 2.502-0.891 0.763-0.674 2.455-3.202 2.759-4.232 1.248-4.223-5.518 1.21-4.542 1.146-1.475 0.098 1.675-9.004 1.855-9.364 0.364-0.728 5.298-9.451 2.32-9.352-1.868 0.062-0.948 5.445-3.157 5.005-2.39-0.476-5.832-6.831-4.788-9.216 1.834-4.192-1.823-5.106-2.352-1.447-0.102 0.705 1.679 5.874-1.055 5.101-2.833-0.807-2.42-12.798-3.788-12.673-2.389 0.219-0.306 10.836-1.019 12.176-0.217 0.408-3.681-3.516-3.902-4.458-0.979-4.16-1.428-2.612-2.589 0.034-1.537 3.502 10.289 9.671 12.422 10.911 1.701 0.988 3.098 1.841 3.681 3.817 0.509 1.725 1.125 4.088-0.047 5.711-0.834 1.155-3.046 1.791-3.046 3.467"/></svg>Green Lake</a>
+    <nav class="admin-nav">
+      <a href="index.html" class="active">Clientes</a>
+      <a href="catalogo.html">Catálogo de obligaciones</a>
+    </nav>
+    <button class="signout">Cerrar sesión</button>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <div>
+        <p class="breadcrumb" style="margin-bottom:8px;"><a href="index.html" style="color:var(--lake-green);font-weight:600;">← Clientes</a></p>
+        <h1 id="client-name">Cargando…</h1>
+        <p class="sub" id="client-meta"></p>
+      </div>
+      <button class="btn btn-outline" id="delete-client-btn">Eliminar cliente</button>
+    </div>
+
+    <div class="admin-card" id="notes-card">
+      <h3 style="margin-bottom:14px;">Notas</h3>
+      <textarea id="client-notes" class="admin-form" style="width:100%; min-height:70px; padding:11px 13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--cream); font-family:inherit; font-size:0.94rem;"></textarea>
+      <div style="margin-top:12px;">
+        <button class="btn btn-sm btn-primary" id="save-notes-btn">Guardar notas</button>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3 style="margin-bottom:6px;">Obligaciones fiscales aplicables</h3>
+      <p class="sub" style="margin-bottom:20px;">Marca las que apliquen a este cliente. Se guardan automáticamente.</p>
+      <div id="obligations-container">Cargando obligaciones…</div>
+    </div>
+  </main>
+</div>
+
+<script src="admin-auth.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const clientId = params.get("id");
+  let currentClient = null;
+
+  (async () => {
+    const session = await requireSession();
+    if (!session) return;
+    if (!clientId) { window.location.href = "index.html"; return; }
+    await loadClient();
+    await loadObligations();
+  })();
+
+  async function loadClient() {
+    const { data, error } = await supabaseClient.from("clients").select("*").eq("id", clientId).single();
+    if (error || !data) {
+      document.getElementById("client-name").textContent = "Cliente no encontrado";
+      return;
+    }
+    currentClient = data;
+    document.getElementById("client-name").textContent = data.name + (data.is_self ? " (tú)" : "");
+    document.getElementById("client-meta").textContent =
+      (data.person_type === "fisica" ? "Persona física" : "Persona jurídica") + " · " +
+      (data.residency === "residente" ? "Residente" : "No residente") +
+      (data.tax_id ? " · " + data.tax_id : "");
+    document.getElementById("client-notes").value = data.notes || "";
+  }
+
+  document.getElementById("save-notes-btn").addEventListener("click", async () => {
+    const notes = document.getElementById("client-notes").value;
+    const { error } = await supabaseClient.from("clients").update({ notes }).eq("id", clientId);
+    if (error) alert("Error al guardar: " + error.message);
+  });
+
+  document.getElementById("delete-client-btn").addEventListener("click", async () => {
+    if (!confirm("¿Eliminar este cliente y todas sus obligaciones marcadas? Esta acción no se puede deshacer.")) return;
+    const { error } = await supabaseClient.from("clients").delete().eq("id", clientId);
+    if (error) { alert("Error al eliminar: " + error.message); return; }
+    window.location.href = "index.html";
+  });
+
+  async function loadObligations() {
+    const container = document.getElementById("obligations-container");
+    if (!currentClient) { container.textContent = "No se pudo determinar el perfil del cliente."; return; }
+
+    const flagColumn = "applies_" +
+      (currentClient.person_type === "fisica" ? "fisica" : "juridica") + "_" +
+      (currentClient.residency === "residente" ? "residente" : "no_residente");
+
+    const { data: types, error: typesError } = await supabaseClient
+      .from("obligation_types")
+      .select("*")
+      .eq(flagColumn, true)
+      .order("category", { ascending: true });
+
+    if (typesError) { container.textContent = "Error al cargar el catálogo: " + typesError.message; return; }
+
+    if (!types || types.length === 0) {
+      container.innerHTML = "El catálogo de obligaciones está vacío todavía. Ve a <a href='catalogo.html' style='color:var(--lake-green);font-weight:600;'>Catálogo de obligaciones</a> para cargarlo.";
+      return;
+    }
+
+    const { data: existing, error: existingError } = await supabaseClient
+      .from("client_obligations")
+      .select("*")
+      .eq("client_id", clientId);
+
+    if (existingError) { container.textContent = "Error: " + existingError.message; return; }
+
+    const activeMap = {};
+    (existing || []).forEach((row) => { activeMap[row.obligation_type_id] = row.active; });
+
+    const byCategory = {};
+    types.forEach((t) => {
+      if (!byCategory[t.category]) byCategory[t.category] = [];
+      byCategory[t.category].push(t);
+    });
+
+    container.innerHTML = "";
+    Object.keys(byCategory).sort().forEach((cat) => {
+      const group = document.createElement("div");
+      group.className = "obl-group";
+      const h3 = document.createElement("h3");
+      h3.textContent = cat;
+      group.appendChild(h3);
+
+      byCategory[cat].forEach((t) => {
+        const checked = !!activeMap[t.id];
+        const item = document.createElement("label");
+        item.className = "obl-item" + (checked ? " checked" : "");
+        item.innerHTML = `
+          <input type="checkbox" ${checked ? "checked" : ""} data-type-id="${t.id}">
+          <div>
+            <span class="obl-name">${escapeHtml(t.name)}</span>
+            <span class="obl-meta">${escapeHtml(t.periodicity)}</span>
+            <div class="obl-desc">${escapeHtml(t.description || "")}</div>
+          </div>
+        `;
+        const checkbox = item.querySelector("input");
+        checkbox.addEventListener("change", async () => {
+          item.classList.toggle("checked", checkbox.checked);
+          await toggleObligation(t.id, checkbox.checked);
+        });
+        group.appendChild(item);
+      });
+
+      container.appendChild(group);
+    });
+  }
+
+  async function toggleObligation(obligationTypeId, active) {
+    const { error } = await supabaseClient
+      .from("client_obligations")
+      .upsert(
+        [{ client_id: clientId, obligation_type_id: obligationTypeId, active }],
+        { onConflict: "client_id,obligation_type_id" }
+      );
+    if (error) alert("Error al guardar: " + error.message);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>
