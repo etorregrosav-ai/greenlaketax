@@ -53,6 +53,20 @@ create table if not exists public.client_obligations (
   unique (client_id, obligation_type_id)
 );
 
+create table if not exists public.documents (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  obligation_type_id uuid references public.obligation_types(id) on delete set null,
+  storage_path text not null, -- ruta dentro del bucket "client-documents"
+  file_name text not null,
+  category text not null default 'otro', -- factura, modelo_presentado, otro
+  amount numeric, -- importe opcional, para poder graficar sin depender de leer el PDF
+  doc_date date,  -- fecha del documento (emisión de la factura, presentación del modelo...)
+  notes text,
+  uploaded_at timestamptz not null default now()
+);
+
 -- ============================================================
 -- SEGURIDAD: Row Level Security — cada usuario solo ve sus propios datos
 -- ============================================================
@@ -60,6 +74,7 @@ create table if not exists public.client_obligations (
 alter table public.clients enable row level security;
 alter table public.obligation_types enable row level security;
 alter table public.client_obligations enable row level security;
+alter table public.documents enable row level security;
 
 create policy "clients_owner_all" on public.clients
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -70,6 +85,9 @@ create policy "obligation_types_owner_all" on public.obligation_types
 create policy "client_obligations_owner_all" on public.client_obligations
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+create policy "documents_owner_all" on public.documents
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
 -- ============================================================
 -- ÍNDICES
 -- ============================================================
@@ -78,3 +96,23 @@ create index if not exists idx_clients_user on public.clients(user_id);
 create index if not exists idx_obligation_types_user on public.obligation_types(user_id);
 create index if not exists idx_client_obligations_client on public.client_obligations(client_id);
 create index if not exists idx_client_obligations_user on public.client_obligations(user_id);
+create index if not exists idx_documents_client on public.documents(client_id);
+create index if not exists idx_documents_user on public.documents(user_id);
+
+-- ============================================================
+-- ALMACENAMIENTO: bucket "client-documents" (crear primero desde
+-- el Dashboard → Storage → New bucket → nombre "client-documents",
+-- privado/no público) y luego ejecutar estas políticas:
+-- ============================================================
+
+create policy "documents_storage_select" on storage.objects
+  for select using (bucket_id = 'client-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "documents_storage_insert" on storage.objects
+  for insert with check (bucket_id = 'client-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "documents_storage_update" on storage.objects
+  for update using (bucket_id = 'client-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "documents_storage_delete" on storage.objects
+  for delete using (bucket_id = 'client-documents' and (storage.foldername(name))[1] = auth.uid()::text);

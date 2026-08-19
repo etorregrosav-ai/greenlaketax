@@ -99,6 +99,52 @@
       <div id="marked-container" style="margin-top:20px;">—</div>
     </div>
 
+    <div class="admin-card">
+      <h3 style="margin-bottom:6px;">Documentos</h3>
+      <p class="sub" style="margin-bottom:20px;">Facturas, modelos presentados y otros documentos de este cliente.</p>
+
+      <form class="admin-form" id="doc-upload-form" style="margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid var(--line);">
+        <div class="field-row">
+          <div class="field">
+            <label for="doc-file">Archivo</label>
+            <input type="file" id="doc-file" required>
+          </div>
+          <div class="field">
+            <label for="doc-category">Categoría</label>
+            <select id="doc-category">
+              <option value="factura">Factura</option>
+              <option value="modelo_presentado">Modelo presentado</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="doc-obligation">Obligación relacionada (opcional)</label>
+            <select id="doc-obligation"><option value="">—</option></select>
+          </div>
+          <div class="field">
+            <label for="doc-amount">Importe € (opcional, para el gráfico)</label>
+            <input type="number" step="0.01" id="doc-amount" placeholder="p.ej. 350.00">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="doc-date">Fecha del documento</label>
+            <input type="date" id="doc-date">
+          </div>
+          <div class="field">
+            <label for="doc-notes">Notas (opcional)</label>
+            <input type="text" id="doc-notes">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" id="doc-upload-btn">Subir documento</button>
+      </form>
+
+      <div id="doc-chart-container" style="margin-bottom:24px;"></div>
+      <div id="doc-list-container">Cargando documentos…</div>
+    </div>
+
     <div class="admin-card" id="edit-obligations-card" style="display:none;">
       <h3 style="margin-bottom:6px;">Catálogo completo para este perfil</h3>
       <p class="sub" style="margin-bottom:20px;">Marca o desmarca las que apliquen. Se guardan automáticamente.</p>
@@ -113,15 +159,19 @@
   const params = new URLSearchParams(window.location.search);
   const clientId = params.get("id");
   let currentClient = null;
+  let currentUserId = null;
 
   (async () => {
     const session = await requireSession();
     if (!session) return;
+    currentUserId = session.user.id;
     if (!clientId) { window.location.href = "index.html"; return; }
     await loadClient();
     await loadObligations();
     await loadUpcoming();
     await renderMarked();
+    await populateObligationSelect();
+    await loadDocuments();
   })();
 
   document.getElementById("toggle-edit-obl-btn").addEventListener("click", () => {
@@ -381,6 +431,169 @@
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // ---- Documentos ----
+
+  async function populateObligationSelect() {
+    if (!currentClient) return;
+    const flagColumn = "applies_" +
+      (currentClient.person_type === "fisica" ? "fisica" : "juridica") + "_" +
+      (currentClient.residency === "residente" ? "residente" : "no_residente");
+
+    const { data } = await supabaseClient
+      .from("obligation_types")
+      .select("id, name")
+      .eq(flagColumn, true)
+      .order("name");
+
+    const select = document.getElementById("doc-obligation");
+    (data || []).forEach((o) => {
+      const opt = document.createElement("option");
+      opt.value = o.id;
+      opt.textContent = o.name;
+      select.appendChild(opt);
+    });
+  }
+
+  document.getElementById("doc-upload-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fileInput = document.getElementById("doc-file");
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const btn = document.getElementById("doc-upload-btn");
+    btn.disabled = true;
+    btn.textContent = "Subiendo…";
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const storagePath = `${currentUserId}/${clientId}/${Date.now()}_${safeName}`;
+
+    const { error: uploadError } = await supabaseClient.storage
+      .from("client-documents")
+      .upload(storagePath, file);
+
+    if (uploadError) {
+      alert("Error al subir el archivo: " + uploadError.message);
+      btn.disabled = false;
+      btn.textContent = "Subir documento";
+      return;
+    }
+
+    const obligationId = document.getElementById("doc-obligation").value || null;
+    const amountVal = document.getElementById("doc-amount").value;
+    const payload = {
+      client_id: clientId,
+      storage_path: storagePath,
+      file_name: file.name,
+      category: document.getElementById("doc-category").value,
+      obligation_type_id: obligationId,
+      amount: amountVal === "" ? null : Number(amountVal),
+      doc_date: document.getElementById("doc-date").value || null,
+      notes: document.getElementById("doc-notes").value.trim(),
+    };
+
+    const { error: insertError } = await supabaseClient.from("documents").insert([payload]);
+
+    btn.disabled = false;
+    btn.textContent = "Subir documento";
+
+    if (insertError) {
+      alert("El archivo se subió pero no se pudo guardar la ficha: " + insertError.message);
+      return;
+    }
+
+    document.getElementById("doc-upload-form").reset();
+    await loadDocuments();
+  });
+
+  async function loadDocuments() {
+    const listContainer = document.getElementById("doc-list-container");
+    const chartContainer = document.getElementById("doc-chart-container");
+
+    const { data, error } = await supabaseClient
+      .from("documents")
+      .select("*, obligation_types(name)")
+      .eq("client_id", clientId)
+      .order("doc_date", { ascending: false, nullsFirst: false })
+      .order("uploaded_at", { ascending: false });
+
+    if (error) { listContainer.textContent = "Error: " + error.message; return; }
+
+    if (!data || data.length === 0) {
+      chartContainer.innerHTML = "";
+      listContainer.innerHTML = "<span style='color:var(--ink-faint);'>Todavía no hay documentos subidos.</span>";
+      return;
+    }
+
+    renderDocChart(data, chartContainer);
+
+    let html = "<table class='client-table'><thead><tr><th>Archivo</th><th>Categoría</th><th>Fecha</th><th>Importe</th><th></th></tr></thead><tbody>";
+    data.forEach((d) => {
+      const catLabel = d.category === "factura" ? "Factura" : d.category === "modelo_presentado" ? "Modelo presentado" : "Otro";
+      html += `<tr>
+        <td class="name">${escapeHtml(d.file_name)}${d.obligation_types ? `<div class="obl-meta" style="margin-left:0;">${escapeHtml(d.obligation_types.name)}</div>` : ""}</td>
+        <td><span class="badge ${d.category === 'factura' ? 'fisica' : 'juridica'}">${catLabel}</span></td>
+        <td>${d.doc_date || "—"}</td>
+        <td>${d.amount !== null ? Number(d.amount).toLocaleString("es-ES", { style: "currency", currency: "EUR" }) : "—"}</td>
+        <td class="doc-actions" style="white-space:nowrap;">
+          <button class="btn btn-sm btn-outline dl-btn" data-path="${escapeHtml(d.storage_path)}">Descargar</button>
+          <button class="btn btn-sm btn-outline del-btn" data-id="${d.id}" data-path="${escapeHtml(d.storage_path)}">Eliminar</button>
+        </td>
+      </tr>`;
+    });
+    html += "</tbody></table>";
+    listContainer.innerHTML = html;
+
+    listContainer.querySelectorAll(".dl-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const { data: signed, error: signError } = await supabaseClient.storage
+          .from("client-documents")
+          .createSignedUrl(btn.dataset.path, 60);
+        if (signError) { alert("Error al generar el enlace: " + signError.message); return; }
+        window.open(signed.signedUrl, "_blank");
+      });
+    });
+
+    listContainer.querySelectorAll(".del-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("¿Eliminar este documento? Esta acción no se puede deshacer.")) return;
+        await supabaseClient.storage.from("client-documents").remove([btn.dataset.path]);
+        const { error: delError } = await supabaseClient.from("documents").delete().eq("id", btn.dataset.id);
+        if (delError) { alert("Error al eliminar: " + delError.message); return; }
+        await loadDocuments();
+      });
+    });
+  }
+
+  function renderDocChart(documents, container) {
+    const withAmount = documents.filter((d) => d.amount !== null && d.amount !== undefined);
+    if (withAmount.length === 0) { container.innerHTML = ""; return; }
+
+    const byMonth = {};
+    withAmount.forEach((d) => {
+      const dateStr = d.doc_date || d.uploaded_at;
+      const dt = new Date(dateStr);
+      const key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0");
+      byMonth[key] = (byMonth[key] || 0) + Number(d.amount);
+    });
+
+    const keys = Object.keys(byMonth).sort().slice(-12);
+    const max = Math.max(...keys.map((k) => byMonth[k]), 1);
+
+    let html = "<p class='sub' style='margin-bottom:10px;'>Importes por mes (de los documentos con importe indicado)</p><div class='mini-chart'>";
+    keys.forEach((k) => {
+      const [y, m] = k.split("-");
+      const value = byMonth[k];
+      const heightPct = Math.max((value / max) * 100, 3);
+      html += `<div class="bar-col">
+        <span class="bar-value">${Math.round(value)}€</span>
+        <div class="bar" style="height:${heightPct}%;"></div>
+        <span class="bar-label">${MONTH_NAMES_ES[Number(m) - 1].slice(0, 3)} ${y.slice(2)}</span>
+      </div>`;
+    });
+    html += "</div>";
+    container.innerHTML = html;
   }
 </script>
 
