@@ -89,8 +89,19 @@
     </div>
 
     <div class="admin-card">
-      <h3 style="margin-bottom:6px;">Obligaciones fiscales aplicables</h3>
-      <p class="sub" style="margin-bottom:20px;">Marca las que apliquen a este cliente. Se guardan automáticamente.</p>
+      <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
+        <div>
+          <h3 style="margin-bottom:6px;">Obligaciones de este cliente</h3>
+          <p class="sub">Lo que ya tiene marcado.</p>
+        </div>
+        <button class="btn btn-sm btn-outline" id="toggle-edit-obl-btn">+ Añadir / editar obligaciones</button>
+      </div>
+      <div id="marked-container" style="margin-top:20px;">—</div>
+    </div>
+
+    <div class="admin-card" id="edit-obligations-card" style="display:none;">
+      <h3 style="margin-bottom:6px;">Catálogo completo para este perfil</h3>
+      <p class="sub" style="margin-bottom:20px;">Marca o desmarca las que apliquen. Se guardan automáticamente.</p>
       <div id="obligations-container">Cargando obligaciones…</div>
     </div>
   </main>
@@ -110,7 +121,71 @@
     await loadClient();
     await loadObligations();
     await loadUpcoming();
+    await renderMarked();
   })();
+
+  document.getElementById("toggle-edit-obl-btn").addEventListener("click", () => {
+    const card = document.getElementById("edit-obligations-card");
+    const isHidden = card.style.display === "none";
+    card.style.display = isHidden ? "block" : "none";
+    if (isHidden) card.scrollIntoView({ behavior: "smooth" });
+  });
+
+  async function renderMarked() {
+    const container = document.getElementById("marked-container");
+    const { data, error } = await supabaseClient
+      .from("client_obligations")
+      .select("*, obligation_types(*)")
+      .eq("client_id", clientId)
+      .eq("active", true);
+
+    if (error) { container.textContent = "Error: " + error.message; return; }
+
+    if (!data || data.length === 0) {
+      container.innerHTML = "<span style='color:var(--ink-faint);'>Todavía no has marcado ninguna obligación para este cliente. Usa \"+ Añadir / editar obligaciones\".</span>";
+      return;
+    }
+
+    const byCategory = {};
+    data.forEach((co) => {
+      const ot = co.obligation_types;
+      if (!ot) return;
+      if (!byCategory[ot.category]) byCategory[ot.category] = [];
+      byCategory[ot.category].push(ot);
+    });
+
+    let html = "";
+    Object.keys(byCategory).sort().forEach((cat) => {
+      html += `<div class="obl-group"><h3>${escapeHtml(cat)}</h3>`;
+      byCategory[cat].sort((a, b) => a.name.localeCompare(b.name)).forEach((t) => {
+        html += `
+          <div class="obl-item checked" style="cursor:default;">
+            <input type="checkbox" checked data-type-id="${t.id}" class="unmark-checkbox">
+            <div>
+              <span class="obl-name">${escapeHtml(t.name)}</span>
+              <span class="obl-meta">${escapeHtml(t.periodicity)}</span>
+              <div class="obl-desc">${escapeHtml(t.description || "")}</div>
+            </div>
+          </div>`;
+      });
+      html += "</div>";
+    });
+
+    container.innerHTML = html;
+
+    container.querySelectorAll(".unmark-checkbox").forEach((cb) => {
+      cb.addEventListener("change", async () => {
+        await toggleObligation(cb.dataset.typeId, false);
+        await loadUpcoming();
+        await renderMarked();
+        const liveCheckbox = document.querySelector(`#obligations-container input[data-type-id="${cb.dataset.typeId}"]`);
+        if (liveCheckbox) {
+          liveCheckbox.checked = false;
+          liveCheckbox.closest(".obl-item").classList.remove("checked");
+        }
+      });
+    });
+  }
 
   async function loadClient() {
     const { data, error } = await supabaseClient.from("clients").select("*").eq("id", clientId).single();
@@ -158,6 +233,7 @@
     await loadClient();
     await loadObligations();
     await loadUpcoming();
+    await renderMarked();
   });
 
   document.getElementById("delete-client-btn").addEventListener("click", async () => {
@@ -229,6 +305,7 @@
           item.classList.toggle("checked", checkbox.checked);
           await toggleObligation(t.id, checkbox.checked);
           await loadUpcoming();
+          await renderMarked();
         });
         group.appendChild(item);
       });
