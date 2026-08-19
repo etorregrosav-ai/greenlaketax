@@ -30,6 +30,13 @@ create table if not exists public.obligation_types (
   applies_fisica_no_residente boolean not null default false,
   applies_juridica_residente boolean not null default false,
   applies_juridica_no_residente boolean not null default false,
+  -- Plazos AEAT (norma general; ver nota en admin/deadlines.js sobre ajustes por año)
+  quarterly_q4_extended boolean not null default false, -- T4 con plazo ampliado hasta el 30 de enero (p.ej. IVA 303, pagos fraccionados 130/131)
+  deadline_start_month int,  -- solo periodicidad "anual": mes de inicio de la ventana de presentación (1-12)
+  deadline_start_day int,
+  deadline_end_month int,    -- mes límite de presentación
+  deadline_end_day int,
+  domiciliacion_offset_days int, -- días antes del fin de presentación en que cierra la domiciliación; NULL = no domiciliable (solo NRC)
   created_at timestamptz not null default now(),
   unique (user_id, code)
 );
