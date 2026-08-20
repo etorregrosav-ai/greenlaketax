@@ -478,14 +478,31 @@
       return;
     }
 
+    const VISIBLE_COUNT = 3;
     let html = "<table class='client-table'><thead><tr><th>Fecha</th><th>Obligación</th><th>Periodo</th><th>Tipo</th></tr></thead><tbody>";
-    rows.forEach((r) => {
-      html += `<tr><td class="name">${formatDate(r.date)}</td><td>${escapeHtml(r.label)}</td><td>${escapeHtml(r.period)}</td><td><span class="badge ${r.kind.startsWith('Domicil') ? 'residente' : 'fisica'}">${escapeHtml(r.kind)}</span></td></tr>`;
+    rows.forEach((r, i) => {
+      const hidden = i >= VISIBLE_COUNT;
+      html += `<tr class="${hidden ? "upcoming-extra" : ""}"${hidden ? ' style="display:none;"' : ""}><td class="name">${formatDate(r.date)}</td><td>${escapeHtml(r.label)}</td><td>${escapeHtml(r.period)}</td><td><span class="badge ${r.kind.startsWith('Domicil') ? 'residente' : 'fisica'}">${escapeHtml(r.kind)}</span></td></tr>`;
     });
     html += "</tbody></table>";
+    if (rows.length > VISIBLE_COUNT) {
+      html += `<button type="button" class="btn btn-sm btn-outline" id="toggle-upcoming-btn" style="margin-top:14px;">Ver ${rows.length - VISIBLE_COUNT} más</button>`;
+    }
     if (hasPuntual) html += "<p class='sub' style='margin-top:14px;'>Hay además obligaciones puntuales marcadas (no generan fecha automática).</p>";
 
     container.innerHTML = html;
+
+    const toggleBtn = document.getElementById("toggle-upcoming-btn");
+    if (toggleBtn) {
+      let expanded = false;
+      toggleBtn.addEventListener("click", () => {
+        expanded = !expanded;
+        container.querySelectorAll(".upcoming-extra").forEach((row) => {
+          row.style.display = expanded ? "table-row" : "none";
+        });
+        toggleBtn.textContent = expanded ? "Ver menos" : `Ver ${rows.length - VISIBLE_COUNT} más`;
+      });
+    }
   }
 
   async function downloadAllDocuments() {
@@ -651,17 +668,6 @@
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
-  }
-
-  // Tipos que Chrome/Safari/Firefox pueden mostrar ellos mismos en una pestaña.
-  // Todo lo demás (Word, Excel, PowerPoint, ZIP...) no tiene visor en el
-  // navegador, así que no tiene sentido "abrirlo" ahí: se descarga directamente
-  // para que lo abra la aplicación de tu ordenador asociada a esa extensión.
-  const BROWSER_PREVIEWABLE_EXT = ["pdf", "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "txt"];
-  function isBrowserPreviewable(filename) {
-    const parts = filename.split(".");
-    const ext = parts.length > 1 ? parts.pop().toLowerCase() : "";
-    return BROWSER_PREVIEWABLE_EXT.includes(ext);
   }
 
   // ---- Documentos ----
@@ -862,17 +868,7 @@
           .from("client-documents")
           .createSignedUrl(btn.dataset.path, 60);
         if (signError) { toast("Error al abrir el archivo: " + signError.message, "error"); return; }
-
-        if (isBrowserPreviewable(btn.dataset.filename)) {
-          window.open(signed.signedUrl, "_blank");
-        } else {
-          // Word, Excel, PowerPoint... el navegador no los puede previsualizar,
-          // así que lo forzamos a descarga: el sistema operativo lo abrirá con
-          // la aplicación que tengas asociada a ese tipo de archivo (Excel, etc.)
-          const sep = signed.signedUrl.includes("?") ? "&" : "?";
-          window.open(signed.signedUrl + sep + "download=" + encodeURIComponent(btn.dataset.filename), "_blank");
-          toast("Este archivo no se puede previsualizar en el navegador — se ha descargado para abrirlo con tu aplicación local.");
-        }
+        window.open(signed.signedUrl, "_blank");
       });
     });
 
