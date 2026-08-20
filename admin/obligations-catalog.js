@@ -6,6 +6,9 @@
 //
 // Plazos: calculados según la norma general de la AEAT (ver admin/deadlines.js).
 // domiciliacion_offset_days = null significa "no domiciliable, solo NRC/informativo".
+// deadline_next_year = true significa que el plazo de presentación cae en el año
+// SIGUIENTE al del período que se declara (p.ej. la Renta de 2025 se presenta en
+// 2026) — es el caso de casi todas las obligaciones anuales.
 // Los modelos con periodicidad "puntual" (dependen de un hecho concreto: una venta,
 // un alta, una herencia...) no generan fechas automáticas en el calendario.
 
@@ -14,7 +17,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_100", name: "Modelo 100 — IRPF (Declaración de la Renta)", category: "IRPF", periodicity: "anual",
     description: "Declaración anual del Impuesto sobre la Renta de las Personas Físicas.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false,
-    deadline_start_month: 4, deadline_start_day: 2, deadline_end_month: 6, deadline_end_day: 30, domiciliacion_offset_days: 5 },
+    deadline_start_month: 4, deadline_start_day: 2, deadline_end_month: 6, deadline_end_day: 30, domiciliacion_offset_days: 5, deadline_next_year: true },
   { code: "modelo_130", name: "Modelo 130 — Pago fraccionado IRPF (estimación directa)", category: "IRPF", periodicity: "trimestral",
     description: "Pago a cuenta trimestral del IRPF para autónomos en estimación directa.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false,
@@ -26,7 +29,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_714", name: "Modelo 714 — Impuesto sobre el Patrimonio", category: "Patrimonio", periodicity: "anual",
     description: "Declaración anual sobre el patrimonio neto, si supera el mínimo exento autonómico.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false,
-    deadline_start_month: 4, deadline_start_day: 2, deadline_end_month: 6, deadline_end_day: 30, domiciliacion_offset_days: 5 },
+    deadline_start_month: 4, deadline_start_day: 2, deadline_end_month: 6, deadline_end_day: 30, domiciliacion_offset_days: 5, deadline_next_year: true },
 
   // ---- Ley Beckham (régimen especial de impatriados) ----
   { code: "modelo_149", name: "Modelo 149 — Solicitud del régimen de impatriados (Ley Beckham)", category: "Beckham", periodicity: "puntual",
@@ -35,7 +38,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_151", name: "Modelo 151 — IRPF de trabajadores desplazados (Ley Beckham)", category: "Beckham", periodicity: "anual",
     description: "Declaración anual del IRPF para quienes tributan bajo el régimen especial de impatriados (tipo fijo 24%/47%), una vez concedido el modelo 149. Sustituye al modelo 100 durante los años de aplicación del régimen.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: false, juridica_no_residente: false,
-    deadline_start_month: 4, deadline_start_day: 2, deadline_end_month: 6, deadline_end_day: 30, domiciliacion_offset_days: 5 },
+    deadline_start_month: 4, deadline_start_day: 2, deadline_end_month: 6, deadline_end_day: 30, domiciliacion_offset_days: 5, deadline_next_year: true },
 
   // ---- IVA ----
   { code: "modelo_303", name: "Modelo 303 — IVA (autoliquidación trimestral)", category: "IVA", periodicity: "trimestral",
@@ -45,7 +48,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_390", name: "Modelo 390 — IVA (resumen anual)", category: "IVA", periodicity: "anual",
     description: "Resumen anual de las declaraciones trimestrales de IVA del ejercicio. Es informativo, sin cuota a domiciliar.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
-    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 30, domiciliacion_offset_days: null },
+    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 30, domiciliacion_offset_days: null, deadline_next_year: true },
 
   // ---- Retenciones ----
   { code: "modelo_111", name: "Modelo 111 — Retenciones IRPF (nóminas y profesionales)", category: "Retenciones", periodicity: "trimestral",
@@ -55,7 +58,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_190", name: "Modelo 190 — Resumen anual de retenciones (111)", category: "Retenciones", periodicity: "anual",
     description: "Resumen anual de las retenciones declaradas en el modelo 111. Informativo, sin cuota a domiciliar.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
-    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null },
+    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null, deadline_next_year: true },
   { code: "modelo_115", name: "Modelo 115 — Retenciones por alquiler de local/oficina", category: "Retenciones", periodicity: "trimestral",
     description: "Retención e ingreso a cuenta sobre las rentas de alquiler de inmuebles urbanos afectos a la actividad.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
@@ -63,7 +66,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_180", name: "Modelo 180 — Resumen anual de retenciones de alquileres (115)", category: "Retenciones", periodicity: "anual",
     description: "Resumen anual de las retenciones declaradas en el modelo 115. Informativo, sin cuota a domiciliar.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
-    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null },
+    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null, deadline_next_year: true },
   { code: "modelo_123", name: "Modelo 123 — Retenciones sobre capital mobiliario", category: "Retenciones", periodicity: "trimestral",
     description: "Retenciones e ingresos a cuenta sobre dividendos, intereses u otros rendimientos del capital mobiliario pagados.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false,
@@ -71,7 +74,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_193", name: "Modelo 193 — Resumen anual retenciones capital mobiliario (123)", category: "Retenciones", periodicity: "anual",
     description: "Resumen anual de las retenciones declaradas en el modelo 123. Informativo, sin cuota a domiciliar.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false,
-    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null },
+    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null, deadline_next_year: true },
   { code: "modelo_216", name: "Modelo 216 — Retenciones practicadas a no residentes", category: "Retenciones", periodicity: "trimestral",
     description: "Ingreso de las retenciones practicadas sobre pagos realizados a no residentes sin establecimiento permanente.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
@@ -79,13 +82,13 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_296", name: "Modelo 296 — Resumen anual de retenciones a no residentes (216)", category: "Retenciones", periodicity: "anual",
     description: "Resumen anual de las retenciones declaradas en el modelo 216. Informativo, sin cuota a domiciliar.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
-    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null },
+    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 1, deadline_end_day: 31, domiciliacion_offset_days: null, deadline_next_year: true },
 
   // ---- Impuesto sobre Sociedades ----
   { code: "modelo_200", name: "Modelo 200 — Impuesto sobre Sociedades", category: "IS", periodicity: "anual",
     description: "Declaración anual del Impuesto sobre Sociedades (ejercicio coincidente con año natural). Para no residentes, aplica cuando operan mediante establecimiento permanente en España.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
-    deadline_start_month: 7, deadline_start_day: 1, deadline_end_month: 7, deadline_end_day: 25, domiciliacion_offset_days: 5 },
+    deadline_start_month: 7, deadline_start_day: 1, deadline_end_month: 7, deadline_end_day: 25, domiciliacion_offset_days: 5, deadline_next_year: true },
   { code: "modelo_202", name: "Modelo 202 — Pago fraccionado del Impuesto sobre Sociedades", category: "IS", periodicity: "puntual",
     description: "Pagos a cuenta del Impuesto sobre Sociedades en los primeros 20 días de abril, octubre y diciembre. Calendario no automatizado (no encaja en trimestres estándar) — añade recordatorios manuales.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true },
@@ -94,7 +97,7 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_347", name: "Modelo 347 — Declaración de operaciones con terceros", category: "Informativo", periodicity: "anual",
     description: "Operaciones con un mismo tercero superiores a 3.005,06€ en el año natural. Informativo, sin cuota a domiciliar.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
-    deadline_start_month: 2, deadline_start_day: 1, deadline_end_month: 2, deadline_end_day: 28, domiciliacion_offset_days: null },
+    deadline_start_month: 2, deadline_start_day: 1, deadline_end_month: 2, deadline_end_day: 28, domiciliacion_offset_days: null, deadline_next_year: true },
   { code: "modelo_349", name: "Modelo 349 — Operaciones intracomunitarias", category: "Informativo", periodicity: "trimestral",
     description: "Declaración recapitulativa de entregas, adquisiciones y prestaciones de servicios intracomunitarias. Informativo.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
@@ -102,11 +105,11 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_720", name: "Modelo 720 — Bienes y derechos en el extranjero", category: "Informativo", periodicity: "anual",
     description: "Cuentas, valores o inmuebles en el extranjero superiores a 50.000€ por bloque. Informativo, sin cuota a domiciliar.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false,
-    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 3, deadline_end_day: 31, domiciliacion_offset_days: null },
+    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 3, deadline_end_day: 31, domiciliacion_offset_days: null, deadline_next_year: true },
   { code: "modelo_232", name: "Modelo 232 — Operaciones vinculadas y con paraísos fiscales", category: "Informativo", periodicity: "anual",
     description: "Información sobre operaciones con personas/entidades vinculadas y con paraísos fiscales (ejercicio coincidente con año natural). Informativo.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: true,
-    deadline_start_month: 11, deadline_start_day: 1, deadline_end_month: 11, deadline_end_day: 30, domiciliacion_offset_days: null },
+    deadline_start_month: 11, deadline_start_day: 1, deadline_end_month: 11, deadline_end_day: 30, domiciliacion_offset_days: null, deadline_next_year: true },
 
   // ---- Formal / registral ----
   { code: "modelo_036", name: "Modelo 036 — Alta, modificación o baja censal", category: "Formal", periodicity: "puntual",
@@ -115,7 +118,7 @@ const OBLIGATIONS_SEED = [
   { code: "cuentas_anuales", name: "Depósito de cuentas anuales (Registro Mercantil)", category: "Formal", periodicity: "anual",
     description: "Depósito de las cuentas anuales en el Registro Mercantil (aprobación en los 6 meses tras el cierre del ejercicio; depósito en el mes siguiente). No es un modelo AEAT ni es domiciliable.",
     fisica_residente: false, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false,
-    deadline_start_month: 7, deadline_start_day: 1, deadline_end_month: 7, deadline_end_day: 30, domiciliacion_offset_days: null },
+    deadline_start_month: 7, deadline_start_day: 1, deadline_end_month: 7, deadline_end_day: 30, domiciliacion_offset_days: null, deadline_next_year: true },
   { code: "iae", name: "IAE — Impuesto de Actividades Económicas", category: "Formal", periodicity: "anual",
     description: "Obligatorio solo para negocios con facturación superior a 1M€ (o tras los primeros 2 años de actividad). No es un modelo autoliquidable, se gestiona vía padrón municipal/AEAT.",
     fisica_residente: true, fisica_no_residente: false, juridica_residente: true, juridica_no_residente: false },
@@ -133,11 +136,11 @@ const OBLIGATIONS_SEED = [
   { code: "modelo_210_alquiler", name: "Modelo 210 — Rendimientos de alquiler", category: "IRNR", periodicity: "anual",
     description: "IRNR por los ingresos por alquiler de inmuebles en España (clave 01). Desde la Orden HAC/56/2024, la agrupación pasó de trimestral a anual (devengos desde 2024): se declara todo el año en una sola autoliquidación, presentada en abril del año siguiente.",
     fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true,
-    deadline_start_month: 4, deadline_start_day: 1, deadline_end_month: 4, deadline_end_day: 20, domiciliacion_offset_days: 5 },
+    deadline_start_month: 4, deadline_start_day: 1, deadline_end_month: 4, deadline_end_day: 20, domiciliacion_offset_days: 5, deadline_next_year: true },
   { code: "modelo_210_imputacion", name: "Modelo 210 — Imputación de rentas inmobiliarias", category: "IRNR", periodicity: "anual",
-    description: "IRNR anual por la posesión de un inmueble en España no alquilado (uso propio o vacío), sobre el 1,1%–2% del valor catastral (clave 02). No domiciliable: pago mediante NRC.",
+    description: "IRNR anual por la posesión de un inmueble en España no alquilado (uso propio o vacío), sobre el 1,1%–2% del valor catastral (clave 02). Se declara durante todo el año siguiente al del devengo (hasta el 31 de diciembre). No domiciliable: pago mediante NRC.",
     fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true,
-    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 12, deadline_end_day: 31, domiciliacion_offset_days: null },
+    deadline_start_month: 1, deadline_start_day: 1, deadline_end_month: 12, deadline_end_day: 31, domiciliacion_offset_days: null, deadline_next_year: true },
   { code: "modelo_210_venta", name: "Modelo 210 — Ganancia por venta de inmueble", category: "IRNR", periodicity: "puntual",
     description: "IRNR sobre la plusvalía obtenida en la venta de un inmueble en España (clave 28), tipo general 19%. Plazo: 4 meses desde la venta — no cubierto por el calendario automático.",
     fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true },

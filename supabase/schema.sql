@@ -39,6 +39,7 @@ create table if not exists public.obligation_types (
   deadline_end_month int,    -- mes límite de presentación
   deadline_end_day int,
   domiciliacion_offset_days int, -- días antes del fin de presentación en que cierra la domiciliación; NULL = no domiciliable (solo NRC)
+  deadline_next_year boolean not null default false, -- true = el plazo cae en el año SIGUIENTE al del período declarado (caso de casi todas las anuales: Renta 2025 se presenta en 2026)
   created_at timestamptz not null default now(),
   unique (user_id, code)
 );

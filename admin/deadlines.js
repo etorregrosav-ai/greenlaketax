@@ -34,7 +34,13 @@ function quarterlyInstances(obligationType, year) {
 function annualInstances(obligationType, year) {
   if (!obligationType.deadline_end_month || !obligationType.deadline_end_day) return [];
 
-  const endDate = new Date(year, obligationType.deadline_end_month - 1, obligationType.deadline_end_day);
+  // "year" es siempre el año del período declarado (el que se muestra como
+  // periodo). La mayoría de obligaciones anuales españolas se presentan al
+  // año SIGUIENTE del ejercicio que declaran (la Renta de 2025 se presenta en
+  // 2026, el modelo 200 del ejercicio 2025 en 2026, etc.) — deadline_next_year
+  // marca esos casos para no confundir "año declarado" con "año de plazo".
+  const filingYear = year + (obligationType.deadline_next_year ? 1 : 0);
+  const endDate = new Date(filingYear, obligationType.deadline_end_month - 1, obligationType.deadline_end_day);
   let domDate = null;
   const hasDom = obligationType.domiciliacion_offset_days !== null && obligationType.domiciliacion_offset_days !== undefined;
   if (hasDom) {
