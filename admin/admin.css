@@ -285,6 +285,37 @@ body.admin-body {
 .obl-item .obl-desc { font-size: 0.85rem; color: var(--ink-soft); margin-top: 3px; line-height: 1.5; }
 .obl-item.checked { background: linear-gradient(90deg, rgba(45,106,79,0.06), transparent); }
 
+/* ==========================================================================
+   FOLDER TABS (documentos por cliente)
+   ========================================================================== */
+
+.folder-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;
+}
+.folder-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 100px; border: 1px solid var(--line);
+  background: var(--cream); color: var(--ink-soft); font-size: 0.86rem; font-weight: 600;
+  cursor: pointer; transition: background 0.18s var(--ease), color 0.18s var(--ease), border-color 0.18s var(--ease);
+}
+.folder-tab::before {
+  content: ""; width: 13px; height: 10px; flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 6.5A1.5 1.5 0 0 1 4.5 5H10l2 2.5h7.5A1.5 1.5 0 0 1 21 9v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 6.5A1.5 1.5 0 0 1 4.5 5H10l2 2.5h7.5A1.5 1.5 0 0 1 21 9v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0.55;
+}
+.folder-tab:hover { border-color: var(--lake-green-soft); color: var(--lake-green); }
+.folder-tab.active {
+  background: var(--lake-green); border-color: var(--lake-green); color: var(--cream);
+}
+.folder-tab.active::before { opacity: 0.9; }
+.folder-tab-add {
+  background: transparent; border-style: dashed; color: var(--ink-faint);
+}
+.folder-tab-add::before { content: none; }
+.folder-tab-add:hover { color: var(--gold); border-color: var(--gold); background: transparent; }
+
 /* Filing matrix toggle */
 .filing-toggle {
   width: 30px; height: 30px; border-radius: 50%; cursor: pointer;

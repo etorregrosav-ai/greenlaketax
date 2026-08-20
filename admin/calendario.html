@@ -66,8 +66,8 @@
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
         <div id="calendar-summary" style="color:var(--ink-soft); font-size:0.94rem;"></div>
         <div class="lang-switch" style="border:1px solid var(--line);">
-          <a href="#" id="view-list-btn" class="active">Lista</a>
-          <a href="#" id="view-table-btn">Tabla</a>
+          <a href="#" id="view-list-btn">Lista</a>
+          <a href="#" id="view-table-btn" class="active">Tabla</a>
         </div>
       </div>
       <div id="calendar-container"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
@@ -81,7 +81,7 @@
 <script>
   let viewDate = new Date();
   viewDate.setDate(1);
-  let currentView = "list";
+  let currentView = "table";
   let lastMatrixCells = []; // para poder togglear sin recargar
 
   (async () => {

@@ -53,6 +53,57 @@ function downloadCSV(filename, headers, rows) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// Modal con campo de texto — sustituye a prompt() nativo. Resuelve con el
+// valor introducido (trim) o null si se cancela / se deja vacío.
+function promptDialog(message, options) {
+  const opts = options || {};
+  const title = opts.title || "Introduce un valor";
+  const confirmLabel = opts.confirmLabel || "Aceptar";
+  const cancelLabel = opts.cancelLabel || "Cancelar";
+  const placeholder = opts.placeholder || "";
+
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.id = "confirm-overlay";
+    overlay.innerHTML =
+      '<div class="confirm-card">' +
+        '<h3></h3><p></p>' +
+        '<input type="text" class="prompt-input" style="width:100%; margin:4px 0 18px; padding:10px 13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--cream); font-family:inherit; font-size:0.94rem;">' +
+        '<div class="form-actions">' +
+          '<button class="btn btn-primary" id="confirm-ok"></button>' +
+          '<button class="btn btn-outline" id="confirm-cancel"></button>' +
+        '</div>' +
+      '</div>';
+    overlay.querySelector("h3").textContent = title;
+    overlay.querySelector("p").textContent = message;
+    overlay.querySelector("#confirm-ok").textContent = confirmLabel;
+    overlay.querySelector("#confirm-cancel").textContent = cancelLabel;
+    const input = overlay.querySelector(".prompt-input");
+    input.placeholder = placeholder;
+    document.body.appendChild(overlay);
+
+    function cleanup(result) {
+      document.removeEventListener("keydown", onKey);
+      overlay.remove();
+      resolve(result);
+    }
+    function submit() {
+      const val = input.value.trim();
+      cleanup(val ? val : null);
+    }
+    function onKey(e) {
+      if (e.key === "Escape") cleanup(null);
+      if (e.key === "Enter") submit();
+    }
+
+    overlay.querySelector("#confirm-ok").addEventListener("click", submit);
+    overlay.querySelector("#confirm-cancel").addEventListener("click", () => cleanup(null));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) cleanup(null); });
+    document.addEventListener("keydown", onKey);
+    input.focus();
+  });
+}
+
 function confirmDialog(message, options) {
   const opts = options || {};
   const title = opts.title || "Confirmar";

@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../assets/css/style.css">
 <link rel="stylesheet" href="admin.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="config.js"></script>
 </head>
 <body class="admin-body">
@@ -113,17 +114,18 @@
     <div class="admin-card">
       <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
         <div>
-          <h3 style="margin-bottom:6px;">Histórico de presentaciones</h3>
-          <p class="sub">Periodos pasados de las obligaciones marcadas, presentados o pendientes.</p>
+          <h3 style="margin-bottom:6px;">Documentación completa</h3>
+          <p class="sub">Descarga todos los documentos subidos de este cliente (todas las carpetas) en un único archivo comprimido.</p>
         </div>
-        <button class="btn btn-sm btn-outline" id="export-history-btn">Exportar CSV</button>
+        <button class="btn btn-sm btn-outline" id="download-all-btn">Descargar toda la documentación</button>
       </div>
-      <div id="history-container" style="margin-top:20px;">—</div>
     </div>
 
     <div class="admin-card">
       <h3 style="margin-bottom:6px;">Documentos</h3>
-      <p class="sub" style="margin-bottom:20px;">Facturas, modelos presentados y otros documentos de este cliente.</p>
+      <p class="sub" style="margin-bottom:18px;">Organizados por carpetas. Facturas, modelos presentados y otros documentos de este cliente.</p>
+
+      <div class="folder-tabs" id="folder-tabs"></div>
 
       <form class="admin-form" id="doc-upload-form" style="margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid var(--line);">
         <div class="field-row">
@@ -160,7 +162,7 @@
             <input type="text" id="doc-notes">
           </div>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm" id="doc-upload-btn">Subir documento</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="doc-upload-btn">Subir documento a esta carpeta</button>
       </form>
 
       <div id="doc-chart-container" style="margin-bottom:24px;"></div>
@@ -194,9 +196,9 @@
     await loadUpcoming();
     await renderMarked();
     await populateObligationSelect();
+    await loadFolders();
     await loadDocuments();
     await updateStatusBadge();
-    await loadHistory();
   })();
 
   async function updateStatusBadge() {
@@ -277,7 +279,6 @@
         await loadUpcoming();
         await renderMarked();
         await updateStatusBadge();
-        await loadHistory();
         const liveCheckbox = document.querySelector(`#obligations-container input[data-type-id="${cb.dataset.typeId}"]`);
         if (liveCheckbox) {
           liveCheckbox.checked = false;
@@ -342,7 +343,6 @@
     await loadUpcoming();
     await renderMarked();
     await updateStatusBadge();
-    await loadHistory();
     toast("Ficha actualizada.");
   });
 
@@ -417,7 +417,6 @@
           await loadUpcoming();
           await renderMarked();
           await updateStatusBadge();
-          await loadHistory();
         });
         group.appendChild(item);
       });
@@ -479,92 +478,152 @@
     container.innerHTML = html;
   }
 
-  let lastHistoryRows = [];
+  async function downloadAllDocuments() {
+    const btn = document.getElementById("download-all-btn");
+    const originalText = btn.textContent;
+    btn.disabled = true;
 
-  async function loadHistory() {
-    const container = document.getElementById("history-container");
-    const { data, error } = await supabaseClient
-      .from("client_obligations")
-      .select("*, obligation_types(*)")
-      .eq("client_id", clientId)
-      .eq("active", true);
-
-    if (error) { container.textContent = "Error: " + error.message; return; }
-
-    if (!data || data.length === 0) {
-      lastHistoryRows = [];
-      container.innerHTML = "<span style='color:var(--ink-faint);'>Sin obligaciones marcadas todavía.</span>";
-      return;
-    }
-
-    const { data: filings } = await supabaseClient
-      .from("obligation_filings")
-      .select("obligation_type_id, period_label, filed, filed_date")
+    const { data: docs, error } = await supabaseClient
+      .from("documents")
+      .select("*, document_folders(name)")
       .eq("client_id", clientId);
 
-    const filedMap = {};
-    (filings || []).forEach((f) => { filedMap[f.obligation_type_id + "|" + f.period_label] = f; });
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const years = [today.getFullYear() - 2, today.getFullYear() - 1, today.getFullYear()];
-
-    let rows = [];
-    data.forEach((co) => {
-      const ot = co.obligation_types;
-      if (!ot || (ot.periodicity !== "trimestral" && ot.periodicity !== "anual")) return;
-      years.forEach((y) => {
-        generateInstancesForYear(ot, y).forEach((inst) => {
-          if (inst.presentacion_end > today) return;
-          const filing = filedMap[ot.id + "|" + inst.period_label];
-          rows.push({
-            date: inst.presentacion_end,
-            label: ot.name,
-            period: inst.period_label,
-            filed: !!(filing && filing.filed),
-            filedDate: filing && filing.filed_date ? filing.filed_date : "",
-          });
-        });
-      });
-    });
-
-    rows.sort((a, b) => b.date - a.date);
-    lastHistoryRows = rows;
-
-    if (rows.length === 0) {
-      container.innerHTML = "<span style='color:var(--ink-faint);'>Todavía no hay periodos pasados para las obligaciones marcadas.</span>";
+    if (error) {
+      toast("Error al listar documentos: " + error.message, "error");
+      btn.disabled = false; btn.textContent = originalText;
+      return;
+    }
+    if (!docs || docs.length === 0) {
+      toast("Este cliente todavía no tiene documentos subidos.", "error");
+      btn.disabled = false; btn.textContent = originalText;
       return;
     }
 
-    let html = "<table class='client-table'><thead><tr><th>Fecha límite</th><th>Obligación</th><th>Periodo</th><th>Estado</th></tr></thead><tbody>";
-    rows.forEach((r) => {
-      html += `<tr>
-        <td class="name">${formatDate(r.date)}</td>
-        <td>${escapeHtml(r.label)}</td>
-        <td>${escapeHtml(r.period)}</td>
-        <td><span class="badge status-${r.filed ? "ok" : "atrasado"}">${r.filed ? "Presentado" : "Pendiente"}</span></td>
-      </tr>`;
-    });
-    html += "</tbody></table>";
-    container.innerHTML = html;
+    const zip = new JSZip();
+    let done = 0;
+    for (const d of docs) {
+      const { data: signed, error: signErr } = await supabaseClient.storage
+        .from("client-documents")
+        .createSignedUrl(d.storage_path, 60);
+      if (!signErr) {
+        try {
+          const resp = await fetch(signed.signedUrl);
+          const blob = await resp.blob();
+          const folderName = d.document_folders ? d.document_folders.name : "Sin carpeta";
+          zip.folder(folderName).file(d.file_name, blob);
+        } catch (e) { /* si un archivo falla, seguimos con el resto */ }
+      }
+      done++;
+      btn.textContent = `Descargando… ${done}/${docs.length}`;
+    }
+
+    btn.textContent = "Comprimiendo…";
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    const clientLabel = currentClient ? currentClient.name.replace(/[^a-zA-Z0-9]+/g, "-") : "cliente";
+    link.download = `greenlake-${clientLabel}-documentos.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    btn.disabled = false;
+    btn.textContent = originalText;
+    toast("Documentación descargada.");
   }
 
-  document.getElementById("export-history-btn").addEventListener("click", () => {
-    if (lastHistoryRows.length === 0) {
-      toast("No hay histórico que exportar todavía.", "error");
+  document.getElementById("download-all-btn").addEventListener("click", downloadAllDocuments);
+
+  // ---- Carpetas de documentos ----
+
+  let folders = [];
+  let currentFolderId = null;
+  const DEFAULT_FOLDERS = ["KYC", "Declaraciones"];
+
+  async function loadFolders() {
+    let { data, error } = await supabaseClient
+      .from("document_folders")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: true });
+
+    if (error) { toast("Error al cargar carpetas: " + error.message, "error"); return; }
+
+    if (!data || data.length === 0) {
+      const { data: seeded, error: seedError } = await supabaseClient
+        .from("document_folders")
+        .insert(DEFAULT_FOLDERS.map((name) => ({ client_id: clientId, name })))
+        .select();
+      if (seedError) { toast("Error al crear carpetas por defecto: " + seedError.message, "error"); return; }
+      data = seeded || [];
+    }
+
+    // Carpeta virtual "Sin carpeta" para documentos antiguos sin folder_id asignado
+    const { count } = await supabaseClient
+      .from("documents")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", clientId)
+      .is("folder_id", null);
+
+    folders = data;
+    if (count && count > 0) folders = folders.concat([{ id: "__none__", name: "Sin carpeta" }]);
+
+    if (!currentFolderId || !folders.find((f) => f.id === currentFolderId)) {
+      currentFolderId = folders[0] ? folders[0].id : null;
+    }
+    renderFolderTabs();
+  }
+
+  function renderFolderTabs() {
+    const container = document.getElementById("folder-tabs");
+    container.innerHTML = "";
+    folders.forEach((f) => {
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "folder-tab" + (f.id === currentFolderId ? " active" : "");
+      tab.textContent = f.name;
+      tab.addEventListener("click", () => {
+        if (currentFolderId === f.id) return;
+        currentFolderId = f.id;
+        renderFolderTabs();
+        loadDocuments();
+      });
+      container.appendChild(tab);
+    });
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "folder-tab folder-tab-add";
+    addBtn.textContent = "+ Nueva carpeta";
+    addBtn.addEventListener("click", createFolder);
+    container.appendChild(addBtn);
+
+    const uploadForm = document.getElementById("doc-upload-form");
+    uploadForm.style.display = currentFolderId === "__none__" ? "none" : "";
+  }
+
+  async function createFolder() {
+    const name = await promptDialog("Se creará una carpeta nueva para este cliente.", { title: "Nueva carpeta", confirmLabel: "Crear", placeholder: "p.ej. Contratos" });
+    if (!name) return;
+    const { data, error } = await supabaseClient
+      .from("document_folders")
+      .insert([{ client_id: clientId, name }])
+      .select()
+      .single();
+    if (error) {
+      toast(error.code === "23505" ? "Ya existe una carpeta con ese nombre." : "Error al crear la carpeta: " + error.message, "error");
       return;
     }
-    const headers = ["Fecha límite", "Obligación", "Periodo", "Estado", "Fecha de presentación"];
-    const rows = lastHistoryRows.map((r) => [
-      formatDate(r.date),
-      r.label,
-      r.period,
-      r.filed ? "Presentado" : "Pendiente",
-      r.filedDate || "",
-    ]);
-    const clientLabel = currentClient ? currentClient.name.replace(/[^a-zA-Z0-9]+/g, "-") : "cliente";
-    downloadCSV(`greenlake-historico-${clientLabel}.csv`, headers, rows);
-  });
+    const noneFolder = folders.find((f) => f.id === "__none__");
+    folders = folders.filter((f) => f.id !== "__none__").concat([data]);
+    if (noneFolder) folders.push(noneFolder);
+    currentFolderId = data.id;
+    renderFolderTabs();
+    loadDocuments();
+    toast("Carpeta creada.");
+  }
 
   async function toggleObligation(obligationTypeId, active) {
     const { error } = await supabaseClient
@@ -610,6 +669,10 @@
     const fileInput = document.getElementById("doc-file");
     const file = fileInput.files[0];
     if (!file) return;
+    if (!currentFolderId || currentFolderId === "__none__") {
+      toast("Selecciona o crea una carpeta antes de subir un documento.", "error");
+      return;
+    }
 
     const btn = document.getElementById("doc-upload-btn");
     btn.disabled = true;
@@ -633,6 +696,7 @@
     const amountVal = document.getElementById("doc-amount").value;
     const payload = {
       client_id: clientId,
+      folder_id: currentFolderId,
       storage_path: storagePath,
       file_name: file.name,
       category: document.getElementById("doc-category").value,
@@ -645,7 +709,7 @@
     const { error: insertError } = await supabaseClient.from("documents").insert([payload]);
 
     btn.disabled = false;
-    btn.textContent = "Subir documento";
+    btn.textContent = "Subir documento a esta carpeta";
 
     if (insertError) {
       toast("El archivo se subió pero no se pudo guardar la ficha: " + insertError.message, "error");
@@ -660,11 +724,15 @@
   async function loadDocuments() {
     const listContainer = document.getElementById("doc-list-container");
     const chartContainer = document.getElementById("doc-chart-container");
+    if (!currentFolderId) { listContainer.innerHTML = ""; chartContainer.innerHTML = ""; return; }
 
-    const { data, error } = await supabaseClient
+    let query = supabaseClient
       .from("documents")
       .select("*, obligation_types(name)")
-      .eq("client_id", clientId)
+      .eq("client_id", clientId);
+    query = currentFolderId === "__none__" ? query.is("folder_id", null) : query.eq("folder_id", currentFolderId);
+
+    const { data, error } = await query
       .order("doc_date", { ascending: false, nullsFirst: false })
       .order("uploaded_at", { ascending: false });
 

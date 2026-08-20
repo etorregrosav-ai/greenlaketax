@@ -67,11 +67,21 @@ create table if not exists public.obligation_filings (
   unique (client_id, obligation_type_id, period_label)
 );
 
+create table if not exists public.document_folders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  name text not null, -- p.ej. "KYC", "Declaraciones", o carpetas personalizadas
+  created_at timestamptz not null default now(),
+  unique (client_id, name)
+);
+
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   client_id uuid not null references public.clients(id) on delete cascade,
   obligation_type_id uuid references public.obligation_types(id) on delete set null,
+  folder_id uuid references public.document_folders(id) on delete set null,
   storage_path text not null, -- ruta dentro del bucket "client-documents"
   file_name text not null,
   category text not null default 'otro', -- factura, modelo_presentado, otro
@@ -89,6 +99,7 @@ alter table public.clients enable row level security;
 alter table public.obligation_types enable row level security;
 alter table public.client_obligations enable row level security;
 alter table public.obligation_filings enable row level security;
+alter table public.document_folders enable row level security;
 alter table public.documents enable row level security;
 
 create policy "clients_owner_all" on public.clients
@@ -106,6 +117,9 @@ create policy "obligation_filings_owner_all" on public.obligation_filings
 create policy "documents_owner_all" on public.documents
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+create policy "document_folders_owner_all" on public.document_folders
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
 -- ============================================================
 -- ÍNDICES
 -- ============================================================
@@ -116,6 +130,9 @@ create index if not exists idx_client_obligations_client on public.client_obliga
 create index if not exists idx_client_obligations_user on public.client_obligations(user_id);
 create index if not exists idx_documents_client on public.documents(client_id);
 create index if not exists idx_documents_user on public.documents(user_id);
+create index if not exists idx_documents_folder on public.documents(folder_id);
+create index if not exists idx_document_folders_client on public.document_folders(client_id);
+create index if not exists idx_document_folders_user on public.document_folders(user_id);
 create index if not exists idx_obligation_filings_client on public.obligation_filings(client_id);
 create index if not exists idx_obligation_filings_user on public.obligation_filings(user_id);
 
