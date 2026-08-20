@@ -223,6 +223,11 @@ body.admin-body {
 .client-table tr.clickable { cursor: pointer; }
 .client-table tr.clickable:hover { background: linear-gradient(90deg, rgba(45,106,79,0.045), transparent); }
 .client-table td.name { font-weight: 600; color: var(--ink); }
+.doc-open-btn {
+  background: none; border: none; padding: 0; margin: 0; font: inherit; font-weight: 600; color: var(--ink);
+  cursor: pointer; text-align: left; border-bottom: 1px solid transparent;
+}
+.doc-open-btn:hover { color: var(--lake-green); border-bottom-color: var(--lake-green-soft); }
 
 .badge {
   display: inline-flex; align-items: center; gap: 5px;

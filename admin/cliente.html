@@ -829,12 +829,15 @@
     data.forEach((d) => {
       const catLabel = d.category === "factura" ? "Factura" : d.category === "modelo_presentado" ? "Modelo presentado" : "Otro";
       html += `<tr>
-        <td class="name">${escapeHtml(d.file_name)}${d.obligation_types ? `<div class="obl-meta" style="margin-left:0;">${escapeHtml(d.obligation_types.name)}</div>` : ""}</td>
+        <td class="name">
+          <button type="button" class="doc-open-btn" data-path="${escapeHtml(d.storage_path)}" title="Abrir">${escapeHtml(d.file_name)}</button>
+          ${d.obligation_types ? `<div class="obl-meta" style="margin-left:0;">${escapeHtml(d.obligation_types.name)}</div>` : ""}
+        </td>
         <td><span class="badge ${d.category === 'factura' ? 'fisica' : 'juridica'}">${catLabel}</span></td>
         <td>${d.doc_date || "—"}</td>
         <td>${d.amount !== null ? Number(d.amount).toLocaleString("es-ES", { style: "currency", currency: "EUR" }) : "—"}</td>
         <td class="doc-actions" style="white-space:nowrap;">
-          <button class="btn btn-sm btn-outline dl-btn" data-path="${escapeHtml(d.storage_path)}">Descargar</button>
+          <button class="btn btn-sm btn-outline dl-btn" data-path="${escapeHtml(d.storage_path)}" data-filename="${escapeHtml(d.file_name)}">Descargar</button>
           <button class="btn btn-sm btn-outline del-btn" data-id="${d.id}" data-path="${escapeHtml(d.storage_path)}">Eliminar</button>
         </td>
       </tr>`;
@@ -842,13 +845,24 @@
     html += "</tbody></table>";
     listContainer.innerHTML = html;
 
+    listContainer.querySelectorAll(".doc-open-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const { data: signed, error: signError } = await supabaseClient.storage
+          .from("client-documents")
+          .createSignedUrl(btn.dataset.path, 60);
+        if (signError) { toast("Error al abrir el archivo: " + signError.message, "error"); return; }
+        window.open(signed.signedUrl, "_blank");
+      });
+    });
+
     listContainer.querySelectorAll(".dl-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const { data: signed, error: signError } = await supabaseClient.storage
           .from("client-documents")
           .createSignedUrl(btn.dataset.path, 60);
         if (signError) { toast("Error al generar el enlace: " + signError.message, "error"); return; }
-        window.open(signed.signedUrl, "_blank");
+        const sep = signed.signedUrl.includes("?") ? "&" : "?";
+        window.open(signed.signedUrl + sep + "download=" + encodeURIComponent(btn.dataset.filename), "_blank");
       });
     });
 
