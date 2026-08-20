@@ -47,8 +47,18 @@
             <input type="text" id="e-name" required>
           </div>
           <div class="field">
+            <label for="e-number">Nº de cliente</label>
+            <input type="text" id="e-number" placeholder="p.ej. 0042">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
             <label for="e-taxid">NIF / NIE / CIF</label>
             <input type="text" id="e-taxid">
+          </div>
+          <div class="field">
+            <label for="e-email">Email de contacto</label>
+            <input type="email" id="e-email">
           </div>
         </div>
         <div class="field-row">
@@ -246,11 +256,13 @@
       return;
     }
     currentClient = data;
-    document.getElementById("client-name").textContent = data.name + (data.is_self ? " (tú)" : "");
+    document.getElementById("client-name").textContent =
+      (data.client_number ? "#" + data.client_number + " — " : "") + data.name + (data.is_self ? " (tú)" : "");
     document.getElementById("client-meta").textContent =
       (data.person_type === "fisica" ? "Persona física" : "Persona jurídica") + " · " +
       (data.residency === "residente" ? "Residente" : "No residente") +
-      (data.tax_id ? " · " + data.tax_id : "");
+      (data.tax_id ? " · " + data.tax_id : "") +
+      (data.email ? " · " + data.email : "");
     document.getElementById("client-notes").value = data.notes || "";
   }
 
@@ -264,7 +276,9 @@
   const editCard = document.getElementById("edit-profile-card");
   document.getElementById("edit-profile-btn").addEventListener("click", () => {
     document.getElementById("e-name").value = currentClient.name;
+    document.getElementById("e-number").value = currentClient.client_number || "";
     document.getElementById("e-taxid").value = currentClient.tax_id || "";
+    document.getElementById("e-email").value = currentClient.email || "";
     document.getElementById("e-type").value = currentClient.person_type;
     document.getElementById("e-residency").value = currentClient.residency;
     editCard.style.display = "block";
@@ -276,7 +290,9 @@
     e.preventDefault();
     const payload = {
       name: document.getElementById("e-name").value.trim(),
+      client_number: document.getElementById("e-number").value.trim(),
       tax_id: document.getElementById("e-taxid").value.trim(),
+      email: document.getElementById("e-email").value.trim(),
       person_type: document.getElementById("e-type").value,
       residency: document.getElementById("e-residency").value,
     };

@@ -10,6 +10,8 @@ create table if not exists public.clients (
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   name text not null,
   tax_id text,
+  client_number text,
+  email text,
   person_type text not null check (person_type in ('fisica','juridica')),
   residency text not null check (residency in ('residente','no_residente')),
   has_pe boolean not null default false, -- establecimiento permanente en España (solo relevante si juridica + no_residente)

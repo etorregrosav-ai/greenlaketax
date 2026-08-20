@@ -43,8 +43,18 @@
             <input type="text" id="c-name" required>
           </div>
           <div class="field">
+            <label for="c-number">Nº de cliente</label>
+            <input type="text" id="c-number" placeholder="p.ej. 0042">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
             <label for="c-taxid">NIF / NIE / CIF</label>
             <input type="text" id="c-taxid">
+          </div>
+          <div class="field">
+            <label for="c-email">Email de contacto</label>
+            <input type="email" id="c-email">
           </div>
         </div>
         <div class="field-row">
@@ -82,7 +92,7 @@
       <div class="table-wrap">
         <table class="client-table" id="client-table" style="display:none;">
           <thead>
-            <tr><th>Nombre</th><th>Tipo</th><th>Residencia</th><th>NIF/CIF</th></tr>
+            <tr><th>Nº</th><th>Nombre</th><th>Tipo</th><th>Residencia</th><th>NIF/CIF</th></tr>
           </thead>
           <tbody id="client-tbody"></tbody>
         </table>
@@ -134,6 +144,7 @@
         window.location.href = "cliente.html?id=" + c.id;
       });
       tr.innerHTML = `
+        <td style="color:var(--ink-faint); font-weight:600;">${escapeHtml(c.client_number || "—")}</td>
         <td class="name">${escapeHtml(c.name)}${c.is_self ? ' <span class="badge residente">Tú</span>' : ""}</td>
         <td><span class="badge ${c.person_type}">${c.person_type === "fisica" ? "Física" : "Jurídica"}</span></td>
         <td><span class="badge ${c.residency}">${c.residency === "residente" ? "Residente" : "No residente"}</span></td>
@@ -163,6 +174,8 @@
   document.getElementById("new-client-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("c-name").value.trim();
+    const client_number = document.getElementById("c-number").value.trim();
+    const email = document.getElementById("c-email").value.trim();
     const tax_id = document.getElementById("c-taxid").value.trim();
     const person_type = document.getElementById("c-type").value;
     const residency = document.getElementById("c-residency").value;
@@ -171,7 +184,7 @@
 
     const { data, error } = await supabaseClient
       .from("clients")
-      .insert([{ name, tax_id, person_type, residency, notes, is_self }])
+      .insert([{ name, client_number, email, tax_id, person_type, residency, notes, is_self }])
       .select()
       .single();
 
