@@ -31,7 +31,10 @@
         <h1>Clientes</h1>
         <p class="sub">Da de alta clientes y controla sus obligaciones fiscales.</p>
       </div>
-      <button class="btn btn-primary" id="new-client-btn">+ Nuevo cliente</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" id="export-csv-btn">Exportar CSV</button>
+        <button class="btn btn-primary" id="new-client-btn">+ Nuevo cliente</button>
+      </div>
     </div>
 
     <div class="admin-card" id="new-client-card" style="display:none;">
@@ -92,7 +95,7 @@
       <div class="table-wrap">
         <table class="client-table" id="client-table" style="display:none;">
           <thead>
-            <tr><th>Nº</th><th>Nombre</th><th>Tipo</th><th>Residencia</th><th>NIF/CIF</th></tr>
+            <tr><th>Nº</th><th>Nombre</th><th>Estado</th><th>Tipo</th><th>Residencia</th><th>NIF/CIF</th></tr>
           </thead>
           <tbody id="client-tbody"></tbody>
         </table>
@@ -104,12 +107,16 @@
 
 <script src="admin-auth.js"></script>
 <script src="admin-ui.js"></script>
+<script src="deadlines.js"></script>
 <script>
   (async () => {
     const session = await requireSession();
     if (!session) return;
     await loadClients();
   })();
+
+  let lastClients = [];
+  let lastStatusByClient = {};
 
   async function loadClients() {
     const { data, error } = await supabaseClient
@@ -137,15 +144,22 @@
     empty.style.display = "none";
     tbody.innerHTML = "";
 
+    const statusByClient = await computeAllStatuses(data.map((c) => c.id));
+    lastClients = data;
+    lastStatusByClient = statusByClient;
+
     data.forEach((c) => {
       const tr = document.createElement("tr");
       tr.className = "clickable";
       tr.addEventListener("click", () => {
         window.location.href = "cliente.html?id=" + c.id;
       });
+      const status = statusByClient[c.id] || "ok";
+      const statusLabel = status === "atrasado" ? "Atrasado" : status === "atencion" ? "Atención" : "Al día";
       tr.innerHTML = `
         <td style="color:var(--ink-faint); font-weight:600;">${escapeHtml(c.client_number || "—")}</td>
         <td class="name">${escapeHtml(c.name)}${c.is_self ? ' <span class="badge residente">Tú</span>' : ""}</td>
+        <td><span class="badge status-${status}">${statusLabel}</span></td>
         <td><span class="badge ${c.person_type}">${c.person_type === "fisica" ? "Física" : "Jurídica"}</span></td>
         <td><span class="badge ${c.residency}">${c.residency === "residente" ? "Residente" : "No residente"}</span></td>
         <td>${escapeHtml(c.tax_id || "—")}</td>
@@ -154,11 +168,56 @@
     });
   }
 
+  async function computeAllStatuses(clientIds) {
+    const result = {};
+    if (clientIds.length === 0) return result;
+
+    const [{ data: obligations }, { data: filings }] = await Promise.all([
+      supabaseClient.from("client_obligations").select("client_id, obligation_types(*)").eq("active", true),
+      supabaseClient.from("obligation_filings").select("client_id, obligation_type_id, period_label").eq("filed", true),
+    ]);
+
+    const filedSet = new Set((filings || []).map((f) => f.client_id + "|" + f.obligation_type_id + "|" + f.period_label));
+    const byClient = {};
+    (obligations || []).forEach((o) => {
+      if (!byClient[o.client_id]) byClient[o.client_id] = [];
+      byClient[o.client_id].push(o);
+    });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    clientIds.forEach((id) => {
+      result[id] = computeClientStatus(byClient[id] || [], filedSet, id, today, 15);
+    });
+    return result;
+  }
+
   function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
   }
+
+  document.getElementById("export-csv-btn").addEventListener("click", () => {
+    if (lastClients.length === 0) {
+      toast("No hay clientes que exportar.", "error");
+      return;
+    }
+    const statusLabelOf = (s) => (s === "atrasado" ? "Atrasado" : s === "atencion" ? "Atención" : "Al día");
+    const headers = ["Nº", "Nombre", "Estado", "Tipo", "Residencia", "NIF/CIF", "Email", "Notas"];
+    const rows = lastClients.map((c) => [
+      c.client_number || "",
+      c.name,
+      statusLabelOf(lastStatusByClient[c.id] || "ok"),
+      c.person_type === "fisica" ? "Física" : "Jurídica",
+      c.residency === "residente" ? "Residente" : "No residente",
+      c.tax_id || "",
+      c.email || "",
+      c.notes || "",
+    ]);
+    downloadCSV("greenlake-clientes.csv", headers, rows);
+  });
 
   const newBtn = document.getElementById("new-client-btn");
   const newCard = document.getElementById("new-client-card");

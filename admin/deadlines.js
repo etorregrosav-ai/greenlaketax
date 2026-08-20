@@ -74,6 +74,37 @@ function getUpcomingInstances(obligationType, fromDate, monthsAhead) {
     .sort((a, b) => a.presentacion_end - b.presentacion_end);
 }
 
+// Devuelve la instancia "actual" de una obligación periódica: la que tiene
+// la fecha de presentación más próxima a hoy (ya sea reciente-pasada o
+// futura). Se usa para el semáforo de estado de cada cliente.
+function getRelevantInstance(obligationType, today) {
+  const years = [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1];
+  let all = [];
+  years.forEach((y) => { all = all.concat(generateInstancesForYear(obligationType, y)); });
+  if (all.length === 0) return null;
+  all.sort((a, b) => Math.abs(a.presentacion_end - today) - Math.abs(b.presentacion_end - today));
+  return all[0];
+}
+
+// Calcula el estado (ok / atencion / atrasado) de un cliente a partir de sus
+// obligaciones activas (con su obligation_type embebido) y el conjunto de
+// claves "clientId|obligationTypeId|period" ya presentadas.
+function computeClientStatus(clientObligations, filedSet, clientId, today, warnDays) {
+  let worst = "ok";
+  clientObligations.forEach((co) => {
+    const ot = co.obligation_types;
+    if (!ot || (ot.periodicity !== "trimestral" && ot.periodicity !== "anual")) return;
+    const inst = getRelevantInstance(ot, today);
+    if (!inst) return;
+    const key = clientId + "|" + ot.id + "|" + inst.period_label;
+    if (filedSet.has(key)) return;
+    const daysUntil = Math.round((inst.presentacion_end - today) / 86400000);
+    if (daysUntil < 0) worst = "atrasado";
+    else if (daysUntil <= warnDays && worst !== "atrasado") worst = "atencion";
+  });
+  return worst;
+}
+
 // Todas las fechas cuyo día de presentación O de domiciliación cae dentro
 // del mes natural indicado (month: 0-11, igual que Date).
 function getInstancesForMonth(obligationType, year, month) {

@@ -33,6 +33,26 @@ function toast(message, type) {
   el.addEventListener("mouseenter", () => clearTimeout(timer));
 }
 
+// Genera y descarga un CSV a partir de cabeceras + filas (arrays de strings).
+function downloadCSV(filename, headers, rows) {
+  const escapeCell = (val) => {
+    const str = val === null || val === undefined ? "" : String(val);
+    return /[",\n;]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+  };
+  const lines = [headers, ...rows].map((row) => row.map(escapeCell).join(";"));
+  const csv = "﻿" + lines.join("\r\n"); // BOM para que Excel detecte UTF-8 correctamente
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function confirmDialog(message, options) {
   const opts = options || {};
   const title = opts.title || "Confirmar";

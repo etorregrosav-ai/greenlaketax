@@ -233,6 +233,11 @@ body.admin-body {
 .badge.juridica { background: rgba(62,107,122,0.14); color: var(--lake-blue-mist); }
 .badge.residente { background: rgba(180,146,76,0.15); color: #93732f; }
 .badge.no_residente { background: rgba(180,80,60,0.11); color: #a1502a; }
+.badge.status-ok { background: rgba(45,106,79,0.11); color: var(--lake-green); }
+.badge.status-atencion { background: rgba(180,146,76,0.16); color: #93732f; }
+.badge.status-atrasado { background: rgba(161,80,42,0.12); color: #a1502a; }
+.badge.status-atrasado::before { animation: status-pulse 1.6s ease-in-out infinite; }
+@keyframes status-pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 0.25; } }
 
 .empty-state {
   text-align: center; padding: 70px 20px; color: var(--ink-faint);
