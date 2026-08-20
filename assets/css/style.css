@@ -3,7 +3,17 @@
    Firma de asesoría legal, fiscal y tributaria — España
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+/* Tipografías alojadas en el propio dominio (no se llama a servidores de
+   Google desde el navegador del visitante — evita el envío de su IP a
+   terceros sin base legal, ver sentencia LG München I, 20 O 13246/22). */
+@font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/fraunces-400.ttf') format('truetype'); }
+@font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/fraunces-500.ttf') format('truetype'); }
+@font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/fraunces-600.ttf') format('truetype'); }
+@font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/fraunces-700.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/inter-400.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/inter-500.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/inter-600.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/inter-700.ttf') format('truetype'); }
 
 :root {
   /* Paleta "Green Lake" */
