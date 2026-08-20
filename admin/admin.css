@@ -316,6 +316,22 @@ body.admin-body {
 .folder-tab-add::before { content: none; }
 .folder-tab-add:hover { color: var(--gold); border-color: var(--gold); background: transparent; }
 
+.dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; text-align: center; padding: 34px 20px; margin-bottom: 4px;
+  border: 1.5px dashed var(--line); border-radius: 14px; background: var(--cream);
+  color: var(--ink-soft); cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease), transform 0.18s var(--ease);
+}
+.dropzone svg { width: 26px; height: 26px; color: var(--lake-green-soft); margin-bottom: 4px; }
+.dropzone p { margin: 0; font-size: 0.9rem; }
+.dropzone strong { color: var(--ink); }
+.dropzone:hover { border-color: var(--lake-green-soft); background: var(--cream-warm); }
+.dropzone.dragover {
+  border-color: var(--lake-green); background: rgba(45,106,79,0.07); transform: scale(1.01);
+}
+.dropzone.dragover svg { color: var(--lake-green); }
+
 /* Filing matrix toggle */
 .filing-toggle {
   width: 30px; height: 30px; border-radius: 50%; cursor: pointer;

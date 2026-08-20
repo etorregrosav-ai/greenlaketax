@@ -112,22 +112,25 @@
     </div>
 
     <div class="admin-card">
-      <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
-        <div>
-          <h3 style="margin-bottom:6px;">Documentación completa</h3>
-          <p class="sub">Descarga todos los documentos subidos de este cliente (todas las carpetas) en un único archivo comprimido.</p>
-        </div>
-        <button class="btn btn-sm btn-outline" id="download-all-btn">Descargar toda la documentación</button>
-      </div>
-    </div>
-
-    <div class="admin-card">
       <h3 style="margin-bottom:6px;">Documentos</h3>
       <p class="sub" style="margin-bottom:18px;">Organizados por carpetas. Facturas, modelos presentados y otros documentos de este cliente.</p>
 
       <div class="folder-tabs" id="folder-tabs"></div>
 
-      <form class="admin-form" id="doc-upload-form" style="margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid var(--line);">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="dropzone-input" multiple hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4 7 9M12 4l5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <p><strong>Arrastra archivos aquí</strong> para subirlos directamente a esta carpeta</p>
+        <p class="sub" style="margin:0;">o haz clic para buscarlos en tu equipo</p>
+      </div>
+      <div id="dropzone-progress" class="sub" style="margin:10px 0 0; display:none;"></div>
+
+      <div id="doc-chart-container" style="margin:24px 0;"></div>
+      <div id="doc-list-container"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+
+      <button type="button" class="btn btn-sm btn-outline" id="toggle-detail-upload-btn" style="margin-top:22px;">+ Añadir con detalles (categoría, importe, notas…)</button>
+
+      <form class="admin-form" id="doc-upload-form" style="display:none; margin-top:20px; padding-top:22px; border-top:1px solid var(--line);">
         <div class="field-row">
           <div class="field">
             <label for="doc-file">Archivo</label>
@@ -164,15 +167,22 @@
         </div>
         <button type="submit" class="btn btn-primary btn-sm" id="doc-upload-btn">Subir documento a esta carpeta</button>
       </form>
-
-      <div id="doc-chart-container" style="margin-bottom:24px;"></div>
-      <div id="doc-list-container"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
     </div>
 
     <div class="admin-card" id="edit-obligations-card" style="display:none;">
       <h3 style="margin-bottom:6px;">Catálogo completo para este perfil</h3>
       <p class="sub" style="margin-bottom:20px;">Marca o desmarca las que apliquen. Se guardan automáticamente.</p>
       <div id="obligations-container"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
+        <div>
+          <h3 style="margin-bottom:6px;">Documentación completa</h3>
+          <p class="sub">Descarga todos los documentos subidos de este cliente (todas las carpetas) en un único archivo comprimido.</p>
+        </div>
+        <button class="btn btn-sm btn-outline" id="download-all-btn">Descargar toda la documentación</button>
+      </div>
     </div>
   </main>
 </div>
@@ -600,8 +610,10 @@
     addBtn.addEventListener("click", createFolder);
     container.appendChild(addBtn);
 
-    const uploadForm = document.getElementById("doc-upload-form");
-    uploadForm.style.display = currentFolderId === "__none__" ? "none" : "";
+    const isNoneFolder = currentFolderId === "__none__";
+    document.getElementById("dropzone").style.display = isNoneFolder ? "none" : "";
+    document.getElementById("toggle-detail-upload-btn").style.display = isNoneFolder ? "none" : "";
+    if (isNoneFolder) document.getElementById("doc-upload-form").style.display = "none";
   }
 
   async function createFolder() {
@@ -664,61 +676,128 @@
     });
   }
 
-  document.getElementById("doc-upload-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const fileInput = document.getElementById("doc-file");
-    const file = fileInput.files[0];
-    if (!file) return;
+  // Sube un archivo a la carpeta activa. extraFields permite añadir
+  // categoría/obligación/importe/fecha/notas desde el formulario detallado;
+  // si se omite, se usan valores por defecto (subida rápida por arrastre).
+  async function uploadFileToFolder(file, extraFields) {
     if (!currentFolderId || currentFolderId === "__none__") {
-      toast("Selecciona o crea una carpeta antes de subir un documento.", "error");
-      return;
+      return { error: "Selecciona o crea una carpeta antes de subir un documento." };
     }
-
-    const btn = document.getElementById("doc-upload-btn");
-    btn.disabled = true;
-    btn.textContent = "Subiendo…";
-
     const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
     const storagePath = `${currentUserId}/${clientId}/${Date.now()}_${safeName}`;
 
     const { error: uploadError } = await supabaseClient.storage
       .from("client-documents")
       .upload(storagePath, file);
+    if (uploadError) return { error: uploadError.message };
 
-    if (uploadError) {
-      toast("Error al subir el archivo: " + uploadError.message, "error");
-      btn.disabled = false;
-      btn.textContent = "Subir documento";
-      return;
-    }
-
-    const obligationId = document.getElementById("doc-obligation").value || null;
-    const amountVal = document.getElementById("doc-amount").value;
-    const payload = {
+    const payload = Object.assign({
       client_id: clientId,
       folder_id: currentFolderId,
       storage_path: storagePath,
       file_name: file.name,
+      category: "otro",
+      obligation_type_id: null,
+      amount: null,
+      doc_date: null,
+      notes: "",
+    }, extraFields || {});
+
+    const { error: insertError } = await supabaseClient.from("documents").insert([payload]);
+    if (insertError) return { error: "El archivo se subió pero no se pudo guardar la ficha: " + insertError.message };
+    return { error: null };
+  }
+
+  document.getElementById("doc-upload-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fileInput = document.getElementById("doc-file");
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const btn = document.getElementById("doc-upload-btn");
+    btn.disabled = true;
+    btn.textContent = "Subiendo…";
+
+    const obligationId = document.getElementById("doc-obligation").value || null;
+    const amountVal = document.getElementById("doc-amount").value;
+    const { error } = await uploadFileToFolder(file, {
       category: document.getElementById("doc-category").value,
       obligation_type_id: obligationId,
       amount: amountVal === "" ? null : Number(amountVal),
       doc_date: document.getElementById("doc-date").value || null,
       notes: document.getElementById("doc-notes").value.trim(),
-    };
-
-    const { error: insertError } = await supabaseClient.from("documents").insert([payload]);
+    });
 
     btn.disabled = false;
     btn.textContent = "Subir documento a esta carpeta";
 
-    if (insertError) {
-      toast("El archivo se subió pero no se pudo guardar la ficha: " + insertError.message, "error");
-      return;
-    }
+    if (error) { toast(error, "error"); return; }
 
     document.getElementById("doc-upload-form").reset();
     await loadDocuments();
     toast("Documento subido.");
+  });
+
+  document.getElementById("toggle-detail-upload-btn").addEventListener("click", () => {
+    const form = document.getElementById("doc-upload-form");
+    const isHidden = form.style.display === "none";
+    form.style.display = isHidden ? "block" : "none";
+  });
+
+  // ---- Dropzone: arrastrar y soltar, o clic para buscar en el equipo ----
+
+  async function handleDroppedFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    if (!currentFolderId || currentFolderId === "__none__") {
+      toast("Selecciona o crea una carpeta antes de subir un documento.", "error");
+      return;
+    }
+
+    const progress = document.getElementById("dropzone-progress");
+    progress.style.display = "block";
+    let done = 0, failed = 0;
+
+    for (const file of files) {
+      progress.textContent = `Subiendo ${done + 1}/${files.length}: ${file.name}…`;
+      const { error } = await uploadFileToFolder(file);
+      if (error) { failed++; toast(`${file.name}: ${error}`, "error"); }
+      done++;
+    }
+
+    progress.style.display = "none";
+    await loadDocuments();
+    if (failed === 0) toast(files.length === 1 ? "Documento subido." : `${files.length} documentos subidos.`);
+  }
+
+  const dropzone = document.getElementById("dropzone");
+  const dropzoneInput = document.getElementById("dropzone-input");
+
+  dropzone.addEventListener("click", () => dropzoneInput.click());
+  dropzoneInput.addEventListener("change", () => {
+    handleDroppedFiles(dropzoneInput.files);
+    dropzoneInput.value = "";
+  });
+
+  ["dragenter", "dragover"].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add("dragover");
+    });
+  });
+  ["dragleave", "dragend"].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove("dragover");
+    });
+  });
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove("dragover");
+    handleDroppedFiles(e.dataTransfer.files);
   });
 
   async function loadDocuments() {
