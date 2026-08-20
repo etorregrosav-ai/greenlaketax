@@ -130,10 +130,10 @@ const OBLIGATIONS_SEED = [
     fisica_residente: true, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: false },
 
   // ---- No residentes: Modelo 210 (IRNR sin establecimiento permanente) ----
-  { code: "modelo_210_alquiler", name: "Modelo 210 — Rendimientos de alquiler", category: "IRNR", periodicity: "trimestral",
-    description: "IRNR trimestral sobre los ingresos por alquiler de inmuebles en España (clave 01). No domiciliable: pago mediante NRC.",
+  { code: "modelo_210_alquiler", name: "Modelo 210 — Rendimientos de alquiler", category: "IRNR", periodicity: "anual",
+    description: "IRNR por los ingresos por alquiler de inmuebles en España (clave 01). Desde la Orden HAC/56/2024, la agrupación pasó de trimestral a anual (devengos desde 2024): se declara todo el año en una sola autoliquidación, presentada en abril del año siguiente.",
     fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true,
-    quarterly_q4_extended: false, domiciliacion_offset_days: null },
+    deadline_start_month: 4, deadline_start_day: 1, deadline_end_month: 4, deadline_end_day: 20, domiciliacion_offset_days: 5 },
   { code: "modelo_210_imputacion", name: "Modelo 210 — Imputación de rentas inmobiliarias", category: "IRNR", periodicity: "anual",
     description: "IRNR anual por la posesión de un inmueble en España no alquilado (uso propio o vacío), sobre el 1,1%–2% del valor catastral (clave 02). No domiciliable: pago mediante NRC.",
     fisica_residente: false, fisica_no_residente: true, juridica_residente: false, juridica_no_residente: true,
