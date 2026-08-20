@@ -443,6 +443,7 @@ body.admin-body {
 .confirm-card h3 { font-size: 1.08rem; margin-bottom: 8px; }
 .confirm-card p { font-size: 0.9rem; color: var(--ink-soft); margin-bottom: 22px; line-height: 1.55; }
 .confirm-card .form-actions { margin-top: 0; justify-content: flex-end; }
+.confirm-card.wide { max-width: 560px; text-align: left; }
 
 /* ==========================================================================
    LOADING SKELETON
