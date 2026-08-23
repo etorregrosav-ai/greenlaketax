@@ -1,5 +1,12 @@
 {
   "redirects": [
-    { "source": "/", "destination": "/es/index.html", "permanent": false }
+    { "source": "/", "destination": "/es/index.html", "permanent": false },
+    { "source": "/home", "destination": "/en/index.html", "permanent": true },
+    { "source": "/real-estate", "destination": "/en/real-estate.html", "permanent": true },
+    { "source": "/starting-a-business", "destination": "/en/starting-a-business.html", "permanent": true },
+    { "source": "/working-in-spain", "destination": "/en/working-in-spain.html", "permanent": true },
+    { "source": "/beckham-law", "destination": "/en/beckham-law.html", "permanent": true },
+    { "source": "/faqs", "destination": "/en/faq.html", "permanent": true },
+    { "source": "/faq", "destination": "/en/faq.html", "permanent": true }
   ]
 }
