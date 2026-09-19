@@ -125,15 +125,8 @@
     </div>
 
     <div class="admin-card">
-      <div class="table-wrap">
-        <table class="client-table" id="obl-table" style="display:none;">
-          <thead>
-            <tr><th>Nombre</th><th>Categoría</th><th>Aplica a</th><th></th></tr>
-          </thead>
-          <tbody id="obl-tbody"></tbody>
-        </table>
-        <div class="empty-state" id="obl-empty">El catálogo está vacío. Pulsa "Cargar catálogo inicial" para partir de una base ya investigada, o crea obligaciones una a una.</div>
-      </div>
+      <div id="obl-groups"></div>
+      <div class="empty-state" id="obl-empty" style="display:none;">El catálogo está vacío. Pulsa "Cargar catálogo inicial" para partir de una base ya investigada, o crea obligaciones una a una.</div>
     </div>
   </main>
 </div>
@@ -149,53 +142,63 @@
   })();
 
   async function loadCatalog() {
-    const { data, error } = await supabaseClient.from("obligation_types").select("*").order("category");
-    const table = document.getElementById("obl-table");
-    const tbody = document.getElementById("obl-tbody");
+    const { data, error } = await supabaseClient.from("obligation_types").select("*").order("category").order("name");
+    const groupsContainer = document.getElementById("obl-groups");
     const empty = document.getElementById("obl-empty");
 
-    if (error) { empty.textContent = "Error: " + error.message; return; }
+    if (error) { empty.style.display = "block"; empty.textContent = "Error: " + error.message; return; }
 
     if (!data || data.length === 0) {
-      table.style.display = "none";
+      groupsContainer.innerHTML = "";
       empty.style.display = "block";
       return;
     }
 
-    table.style.display = "table";
     empty.style.display = "none";
-    tbody.innerHTML = "";
 
+    const byCategory = {};
     data.forEach((o) => {
-      const applies = [];
-      if (o.applies_fisica_residente) applies.push("Física res.");
-      if (o.applies_fisica_no_residente) applies.push("Física no res.");
-      if (o.applies_juridica_residente) applies.push("Jurídica res.");
-      if (o.applies_juridica_no_residente) applies.push("Jurídica no res.");
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="name">${escapeHtml(o.name)}</td>
-        <td>${escapeHtml(o.category)}</td>
-        <td style="font-size:0.85rem; color:var(--ink-soft);">${applies.join(", ") || "—"}</td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn-sm btn-outline edit-btn" data-id="${o.id}">Editar</button>
-          <button class="btn btn-sm btn-outline delete-btn" data-id="${o.id}" style="margin-left:6px;">Eliminar</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
+      if (!byCategory[o.category]) byCategory[o.category] = [];
+      byCategory[o.category].push(o);
     });
 
-    tbody.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.addEventListener("click", () => openForEdit(data.find((o) => o.id === btn.dataset.id)));
-    });
-    tbody.querySelectorAll(".delete-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        if (!await confirmDialog("¿Eliminar esta obligación del catálogo? También se quitará de los clientes que la tuvieran marcada.")) return;
-        const { error } = await supabaseClient.from("obligation_types").delete().eq("id", btn.dataset.id);
-        if (error) { toast("Error: " + error.message, "error"); return; }
-        await loadCatalog();
+    groupsContainer.innerHTML = "";
+    Object.keys(byCategory).sort().forEach((cat) => {
+      const items = byCategory[cat];
+      const group = document.createElement("div");
+      group.className = "catalog-group";
+      group.innerHTML = `<div class="catalog-group-header">${escapeHtml(cat)}<span class="count">${items.length} obligaci${items.length === 1 ? "ón" : "ones"}</span></div>`;
+
+      items.forEach((o) => {
+        const applies = [];
+        if (o.applies_fisica_residente) applies.push("Física res.");
+        if (o.applies_fisica_no_residente) applies.push("Física no res.");
+        if (o.applies_juridica_residente) applies.push("Jurídica res.");
+        if (o.applies_juridica_no_residente) applies.push("Jurídica no res.");
+
+        const row = document.createElement("div");
+        row.className = "catalog-row";
+        row.innerHTML = `
+          <div>
+            <div class="catalog-name">${escapeHtml(o.name)}</div>
+            <div class="catalog-applies">${applies.join(", ") || "—"}</div>
+          </div>
+          <div class="catalog-actions">
+            <a class="edit-btn" data-id="${o.id}">Editar</a>
+            <a class="danger delete-btn" data-id="${o.id}">Eliminar</a>
+          </div>
+        `;
+        row.querySelector(".edit-btn").addEventListener("click", () => openForEdit(data.find((x) => x.id === o.id)));
+        row.querySelector(".delete-btn").addEventListener("click", async () => {
+          if (!await confirmDialog("¿Eliminar esta obligación del catálogo? También se quitará de los clientes que la tuvieran marcada.")) return;
+          const { error: delError } = await supabaseClient.from("obligation_types").delete().eq("id", o.id);
+          if (delError) { toast("Error: " + delError.message, "error"); return; }
+          await loadCatalog();
+        });
+        group.appendChild(row);
       });
+
+      groupsContainer.appendChild(group);
     });
   }
 

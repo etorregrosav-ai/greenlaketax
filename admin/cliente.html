@@ -86,102 +86,149 @@
       </form>
     </div>
 
-    <div class="admin-card" id="notes-card">
-      <h3 style="margin-bottom:14px;">Notas</h3>
-      <textarea id="client-notes" class="admin-form" style="width:100%; min-height:70px; padding:11px 13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--cream); font-family:inherit; font-size:0.94rem;"></textarea>
-      <div style="margin-top:12px;">
-        <button class="btn btn-sm btn-primary" id="save-notes-btn">Guardar notas</button>
-      </div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="margin-bottom:6px;">Próximas obligaciones</h3>
-      <p class="sub" style="margin-bottom:20px;">Calculadas a partir de las obligaciones marcadas abajo y de las fechas generales de la AEAT. Orientativo — confirma fechas exactas cerca de fines de semana o festivos.</p>
-      <div id="upcoming-container">—</div>
-    </div>
-
-    <div class="admin-card">
-      <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
-        <div>
-          <h3 style="margin-bottom:6px;">Obligaciones de este cliente</h3>
-          <p class="sub">Lo que ya tiene marcado.</p>
-        </div>
-        <button class="btn btn-sm btn-outline" id="toggle-edit-obl-btn">+ Añadir / editar obligaciones</button>
-      </div>
-      <div id="marked-container" style="margin-top:20px;">—</div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="margin-bottom:6px;">Documentos</h3>
-      <p class="sub" style="margin-bottom:18px;">Organizados por carpetas. Facturas, modelos presentados y otros documentos de este cliente.</p>
-
-      <div class="folder-tabs" id="folder-tabs"></div>
-
-      <div id="doc-chart-container" style="margin-bottom:24px;"></div>
-      <div id="doc-list-container"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
-
-      <div class="dropzone" id="dropzone" style="margin-top:24px;">
-        <input type="file" id="dropzone-input" multiple hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4 7 9M12 4l5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-        <p><strong>Arrastra archivos aquí</strong> para subirlos directamente a esta carpeta</p>
-        <p class="sub" style="margin:0;">o haz clic para buscarlos en tu equipo</p>
-      </div>
-      <div id="dropzone-progress" class="sub" style="margin:10px 0 0; display:none;"></div>
-
-      <button type="button" class="btn btn-sm btn-outline" id="toggle-detail-upload-btn" style="margin-top:14px;">+ Añadir con detalles (categoría, importe, notas…)</button>
-
-      <form class="admin-form" id="doc-upload-form" style="display:none; margin-top:20px; padding-top:22px; border-top:1px solid var(--line);">
-        <div class="field-row">
-          <div class="field">
-            <label for="doc-file">Archivo</label>
-            <input type="file" id="doc-file" required>
-          </div>
-          <div class="field">
-            <label for="doc-category">Categoría</label>
-            <select id="doc-category">
-              <option value="factura">Factura</option>
-              <option value="modelo_presentado">Modelo presentado</option>
-              <option value="otro">Otro</option>
-            </select>
+    <div class="client-layout">
+      <aside class="client-side">
+        <div class="client-next-card">
+          <span class="stat-band-label">Próximo vencimiento</span>
+          <div class="next-date" id="next-date">—</div>
+          <div class="next-obl" id="next-obl"></div>
+          <div class="next-counts">
+            <div><strong id="next-count-obl">0</strong><span>obligaciones</span></div>
+            <div><strong id="next-count-doc">0</strong><span>documentos</span></div>
           </div>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="doc-obligation">Obligación relacionada (opcional)</label>
-            <select id="doc-obligation"><option value="">—</option></select>
-          </div>
-          <div class="field">
-            <label for="doc-amount">Importe € (opcional, para el gráfico)</label>
-            <input type="number" step="0.01" id="doc-amount" placeholder="p.ej. 350.00">
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="doc-date">Fecha del documento</label>
-            <input type="date" id="doc-date">
-          </div>
-          <div class="field">
-            <label for="doc-notes">Notas (opcional)</label>
-            <input type="text" id="doc-notes">
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm" id="doc-upload-btn">Subir documento a esta carpeta</button>
-      </form>
-    </div>
 
-    <div class="admin-card" id="edit-obligations-card" style="display:none;">
-      <h3 style="margin-bottom:6px;">Catálogo completo para este perfil</h3>
-      <p class="sub" style="margin-bottom:20px;">Marca o desmarca las que apliquen. Se guardan automáticamente.</p>
-      <div id="obligations-container"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
-    </div>
-
-    <div class="admin-card">
-      <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
-        <div>
-          <h3 style="margin-bottom:6px;">Documentación completa</h3>
-          <p class="sub">Descarga todos los documentos subidos de este cliente (todas las carpetas) en un único archivo comprimido.</p>
+        <div class="client-meta-card">
+          <dl>
+            <dt>Tipo</dt><dd id="meta-type">—</dd>
+            <dt>Residencia</dt><dd id="meta-residency">—</dd>
+            <dt>NIF/CIF</dt><dd id="meta-taxid">—</dd>
+            <dt>Alta</dt><dd id="meta-created">—</dd>
+          </dl>
         </div>
-        <button class="btn btn-sm btn-outline" id="download-all-btn">Descargar toda la documentación</button>
+      </aside>
+
+      <div class="client-main">
+        <div class="view-tabs" id="client-tabs">
+          <button type="button" class="active" data-tab="obligaciones">Obligaciones</button>
+          <button type="button" data-tab="documentos">Documentos</button>
+          <button type="button" data-tab="notas">Notas</button>
+          <button type="button" data-tab="historial">Historial</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-obligaciones">
+          <div class="admin-card">
+            <h3 style="margin-bottom:6px;">Próximas obligaciones</h3>
+            <p class="sub" style="margin-bottom:20px;">Calculadas a partir de las obligaciones marcadas abajo y de las fechas generales de la AEAT. Orientativo — confirma fechas exactas cerca de fines de semana o festivos.</p>
+            <div id="upcoming-container">—</div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
+              <div>
+                <h3 style="margin-bottom:6px;">Obligaciones de este cliente</h3>
+                <p class="sub">Lo que ya tiene marcado.</p>
+              </div>
+              <button class="btn btn-sm btn-outline" id="toggle-edit-obl-btn">+ Añadir / editar obligaciones</button>
+            </div>
+            <div id="marked-container" style="margin-top:20px;">—</div>
+          </div>
+
+          <div class="admin-card" id="edit-obligations-card" style="display:none;">
+            <h3 style="margin-bottom:6px;">Catálogo completo para este perfil</h3>
+            <p class="sub" style="margin-bottom:20px;">Marca o desmarca las que apliquen. Se guardan automáticamente.</p>
+            <div id="obligations-container"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-documentos">
+          <div class="admin-card">
+            <h3 style="margin-bottom:6px;">Documentos</h3>
+            <p class="sub" style="margin-bottom:18px;">Organizados por carpetas. Facturas, modelos presentados y otros documentos de este cliente.</p>
+
+            <div class="folder-tabs" id="folder-tabs"></div>
+
+            <div id="doc-chart-container" style="margin-bottom:24px;"></div>
+            <div id="doc-list-container"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+
+            <div class="dropzone" id="dropzone" style="margin-top:24px;">
+              <input type="file" id="dropzone-input" multiple hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4 7 9M12 4l5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+              <p><strong>Arrastra archivos aquí</strong> para subirlos directamente a esta carpeta</p>
+              <p class="sub" style="margin:0;">o haz clic para buscarlos en tu equipo</p>
+            </div>
+            <div id="dropzone-progress" class="sub" style="margin:10px 0 0; display:none;"></div>
+
+            <button type="button" class="btn btn-sm btn-outline" id="toggle-detail-upload-btn" style="margin-top:14px;">+ Añadir con detalles (categoría, importe, notas…)</button>
+
+            <form class="admin-form" id="doc-upload-form" style="display:none; margin-top:20px; padding-top:22px; border-top:1px solid var(--line);">
+              <div class="field-row">
+                <div class="field">
+                  <label for="doc-file">Archivo</label>
+                  <input type="file" id="doc-file" required>
+                </div>
+                <div class="field">
+                  <label for="doc-category">Categoría</label>
+                  <select id="doc-category">
+                    <option value="factura">Factura</option>
+                    <option value="modelo_presentado">Modelo presentado</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="doc-obligation">Obligación relacionada (opcional)</label>
+                  <select id="doc-obligation"><option value="">—</option></select>
+                </div>
+                <div class="field">
+                  <label for="doc-amount">Importe € (opcional, para el gráfico)</label>
+                  <input type="number" step="0.01" id="doc-amount" placeholder="p.ej. 350.00">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="doc-date">Fecha del documento</label>
+                  <input type="date" id="doc-date">
+                </div>
+                <div class="field">
+                  <label for="doc-notes">Notas (opcional)</label>
+                  <input type="text" id="doc-notes">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" id="doc-upload-btn">Subir documento a esta carpeta</button>
+            </form>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-header" style="margin-bottom:0; align-items:flex-start;">
+              <div>
+                <h3 style="margin-bottom:6px;">Documentación completa</h3>
+                <p class="sub">Descarga todos los documentos subidos de este cliente (todas las carpetas) en un único archivo comprimido.</p>
+              </div>
+              <button class="btn btn-sm btn-outline" id="download-all-btn">Descargar toda la documentación</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-notas">
+          <div class="admin-card">
+            <h3 style="margin-bottom:6px;">Notas</h3>
+            <p class="sub" style="margin-bottom:18px;">Anotaciones internas sobre este cliente.</p>
+            <textarea id="client-notes" class="admin-form" style="width:100%; min-height:220px; padding:13px 15px; border:1px solid var(--line); border-radius:var(--radius); background:var(--cream); font-family:inherit; font-size:0.94rem; line-height:1.6;"></textarea>
+            <div style="margin-top:14px;">
+              <button class="btn btn-sm btn-primary" id="save-notes-btn">Guardar notas</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-historial">
+          <div class="admin-card">
+            <h3 style="margin-bottom:6px;">Historial</h3>
+            <p class="sub" style="margin-bottom:18px;">Altas, obligaciones marcadas, modelos presentados y documentos subidos, de más reciente a más antiguo.</p>
+            <div class="history-list" id="history-list"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -209,7 +256,64 @@
     await loadFolders();
     await loadDocuments();
     await updateStatusBadge();
+    await updateSideCounts();
+    await loadHistorial();
   })();
+
+  document.getElementById("client-tabs").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-tab]");
+    if (!btn) return;
+    document.querySelectorAll("#client-tabs button").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+
+  async function updateSideCounts() {
+    const [{ count: oblCount }, { count: docCount }] = await Promise.all([
+      supabaseClient.from("client_obligations").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("active", true),
+      supabaseClient.from("documents").select("id", { count: "exact", head: true }).eq("client_id", clientId),
+    ]);
+    document.getElementById("next-count-obl").textContent = oblCount || 0;
+    document.getElementById("next-count-doc").textContent = docCount || 0;
+  }
+
+  async function loadHistorial() {
+    const container = document.getElementById("history-list");
+
+    const [{ data: obligations }, { data: filings }, { data: documents }] = await Promise.all([
+      supabaseClient.from("client_obligations").select("created_at, obligation_types(name)").eq("client_id", clientId).eq("active", true),
+      supabaseClient.from("obligation_filings").select("filed_date, created_at, period_label, obligation_types(name)").eq("client_id", clientId).eq("filed", true),
+      supabaseClient.from("documents").select("uploaded_at, file_name").eq("client_id", clientId),
+    ]);
+
+    let events = [];
+    if (currentClient) events.push({ date: new Date(currentClient.created_at), text: "Alta del cliente" });
+    (obligations || []).forEach((o) => {
+      if (!o.obligation_types) return;
+      events.push({ date: new Date(o.created_at), text: "Obligación añadida — " + o.obligation_types.name });
+    });
+    (filings || []).forEach((f) => {
+      if (!f.obligation_types) return;
+      events.push({ date: new Date(f.filed_date || f.created_at), text: f.obligation_types.name + " presentado (" + f.period_label + ")" });
+    });
+    (documents || []).forEach((d) => {
+      events.push({ date: new Date(d.uploaded_at), text: "Documento subido — " + d.file_name });
+    });
+
+    events.sort((a, b) => b.date - a.date);
+
+    if (events.length === 0) {
+      container.innerHTML = "<span style='color:var(--ink-faint);'>Todavía no hay actividad registrada para este cliente.</span>";
+      return;
+    }
+
+    container.innerHTML = events.map((e) => `
+      <div class="history-row">
+        <div class="history-date">${formatDate(e.date)}</div>
+        <div class="history-text">${escapeHtml(e.text)}</div>
+      </div>`).join("");
+  }
 
   async function updateStatusBadge() {
     const nameEl = document.getElementById("client-name");
@@ -313,6 +417,11 @@
       (data.tax_id ? " · " + data.tax_id : "") +
       (data.email ? " · " + data.email : "");
     document.getElementById("client-notes").value = data.notes || "";
+
+    document.getElementById("meta-type").textContent = data.person_type === "fisica" ? "Persona física" : "Persona jurídica";
+    document.getElementById("meta-residency").textContent = data.residency === "residente" ? "Residente" : "No residente";
+    document.getElementById("meta-taxid").textContent = data.tax_id || "—";
+    document.getElementById("meta-created").textContent = data.created_at ? formatDate(new Date(data.created_at)) : "—";
   }
 
   document.getElementById("save-notes-btn").addEventListener("click", async () => {
@@ -435,6 +544,18 @@
     });
   }
 
+  function updateNextCard(row) {
+    const dateEl = document.getElementById("next-date");
+    const oblEl = document.getElementById("next-obl");
+    if (!row) {
+      dateEl.textContent = "Sin plazos próximos";
+      oblEl.textContent = "";
+      return;
+    }
+    dateEl.textContent = formatDate(row.date);
+    oblEl.textContent = row.label + " — " + row.kind;
+  }
+
   async function loadUpcoming() {
     const container = document.getElementById("upcoming-container");
     const { data, error } = await supabaseClient
@@ -447,6 +568,7 @@
 
     if (!data || data.length === 0) {
       container.innerHTML = "<span style='color:var(--ink-faint);'>Marca alguna obligación abajo para ver aquí sus próximos plazos.</span>";
+      updateNextCard(null);
       return;
     }
 
@@ -470,6 +592,7 @@
     });
 
     rows.sort((a, b) => a.date - b.date);
+    updateNextCard(rows[0] || null);
 
     if (rows.length === 0) {
       container.innerHTML = hasPuntual

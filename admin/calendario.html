@@ -39,37 +39,42 @@
       </div>
     </div>
 
-    <div class="stat-grid" id="stat-grid" style="display:none;">
-      <div class="stat-tile primary">
-        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></div>
-        <span class="stat-value" id="stat-total">0</span>
-        <span class="stat-label">Plazos este mes</span>
+    <div class="stat-band" id="stat-grid" style="display:none;">
+      <div class="stat-band-item">
+        <span class="stat-band-label">Plazos este mes</span>
+        <span class="stat-band-value" id="stat-total">0</span><span class="stat-band-sub" id="stat-clients-sub"></span>
       </div>
-      <div class="stat-tile warn">
-        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
-        <span class="stat-value" id="stat-pending">0</span>
-        <span class="stat-label">Pendientes</span>
+      <div class="stat-band-item warn">
+        <span class="stat-band-label">Vencen en 7 días</span>
+        <span class="stat-band-value" id="stat-urgent">0</span><span class="stat-band-sub" id="stat-urgent-sub"></span>
       </div>
-      <div class="stat-tile">
-        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></div>
-        <span class="stat-value" id="stat-filed">0</span>
-        <span class="stat-label">Presentados</span>
+      <div class="stat-band-item">
+        <span class="stat-band-label">Presentados</span>
+        <span class="stat-band-value" id="stat-filed">0</span><span class="stat-band-sub" id="stat-filed-sub"></span>
       </div>
-      <div class="stat-tile">
-        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15 14.2c2.2.3 4 2 4 4.8"/></svg></div>
-        <span class="stat-value" id="stat-clients">0</span>
-        <span class="stat-label">Clientes implicados</span>
+      <div class="stat-band-item danger">
+        <span class="stat-band-label">Atrasados</span>
+        <span class="stat-band-value" id="stat-atrasados">0</span><span class="stat-band-sub" id="stat-atrasados-sub"></span>
       </div>
+    </div>
+
+    <div id="week-section" style="display:none; margin-bottom:34px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;">
+        <h2 style="margin:0; font-size:1.2rem;">Esta semana</h2>
+        <span class="sub" id="week-range" style="font-size:0.82rem;"></span>
+      </div>
+      <div class="week-list" id="week-list"></div>
     </div>
 
     <div class="admin-card">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
-        <div id="calendar-summary" style="color:var(--ink-soft); font-size:0.94rem;"></div>
+        <h3 style="margin:0;">Matriz del mes</h3>
         <div class="lang-switch" style="border:1px solid var(--line);">
           <a href="#" id="view-list-btn">Lista</a>
           <a href="#" id="view-table-btn" class="active">Tabla</a>
         </div>
       </div>
+      <div id="calendar-summary" class="sub" style="margin-bottom:14px;"></div>
       <div id="calendar-container"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
     </div>
   </main>
@@ -88,6 +93,7 @@
     const session = await requireSession();
     if (!session) return;
     await renderMonth();
+    await renderEstaSemana();
   })();
 
   document.getElementById("prev-month").addEventListener("click", () => {
@@ -163,7 +169,7 @@
           rows.push({ date: inst.presentacion_end, client, obligation: ot, period: inst.period_label, kind: inst.domiciliacion_end ? "Presentación (NRC)" : "Presentación" });
         }
         const key = client.id + "|" + ot.id + "|" + inst.period_label;
-        if (!matrixMap.has(key)) matrixMap.set(key, { client, obligation: ot, period: inst.period_label });
+        if (!matrixMap.has(key)) matrixMap.set(key, { client, obligation: ot, period: inst.period_label, dueDate: inst.presentacion_end });
       });
     });
 
@@ -178,9 +184,6 @@
       return;
     }
 
-    summary.textContent = rows.length + " plazo" + (rows.length === 1 ? "" : "s") + " este mes, de " +
-      new Set(rows.map((r) => r.client.id)).size + " cliente" + (new Set(rows.map((r) => r.client.id)).size === 1 ? "" : "s") + ".";
-
     const cells = Array.from(matrixMap.values());
     const { data: filings } = await supabaseClient
       .from("obligation_filings")
@@ -189,17 +192,120 @@
     const filedSetForStats = new Set((filings || []).map((f) => f.client_id + "|" + f.obligation_type_id + "|" + f.period_label));
     const filedCount = cells.filter((c) => filedSetForStats.has(c.client.id + "|" + c.obligation.id + "|" + c.period)).length;
 
+    const realToday = new Date();
+    realToday.setHours(0, 0, 0, 0);
+    const pendingCells = cells.filter((c) => !filedSetForStats.has(c.client.id + "|" + c.obligation.id + "|" + c.period));
+    const atrasadosCount = pendingCells.filter((c) => c.dueDate < realToday).length;
+    const urgentCount = pendingCells.filter((c) => {
+      const daysUntil = Math.round((c.dueDate - realToday) / 86400000);
+      return daysUntil >= 0 && daysUntil <= 7;
+    }).length;
+    const nClients = new Set(cells.map((c) => c.client.id)).size;
+
+    summary.textContent = rows.length + " plazo" + (rows.length === 1 ? "" : "s") + " este mes, de " +
+      nClients + " cliente" + (nClients === 1 ? "" : "s") + ".";
+
     document.getElementById("stat-total").textContent = cells.length;
-    document.getElementById("stat-pending").textContent = cells.length - filedCount;
+    document.getElementById("stat-clients-sub").textContent = nClients + (nClients === 1 ? " cliente" : " clientes");
+    document.getElementById("stat-urgent").textContent = urgentCount;
+    document.getElementById("stat-urgent-sub").textContent = urgentCount > 0 ? "urgente" : "";
     document.getElementById("stat-filed").textContent = filedCount;
-    document.getElementById("stat-clients").textContent = new Set(cells.map((c) => c.client.id)).size;
-    statGrid.style.display = "grid";
+    document.getElementById("stat-filed-sub").textContent = "de " + cells.length;
+    document.getElementById("stat-atrasados").textContent = atrasadosCount;
+    document.getElementById("stat-atrasados-sub").textContent = atrasadosCount > 0 ? "revisar" : "";
+    statGrid.style.display = "flex";
 
     if (currentView === "list") {
       renderListView(rows, container);
     } else {
       await renderTableView(cells, container);
     }
+  }
+
+  // "Esta semana" — plazos pendientes en los próximos 7 días, independiente
+  // del mes que se esté viendo en la matriz de arriba.
+  async function renderEstaSemana() {
+    const section = document.getElementById("week-section");
+    const list = document.getElementById("week-list");
+    const rangeEl = document.getElementById("week-range");
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(today);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const { data: clients } = await supabaseClient.from("clients").select("id, name, is_self");
+    if (!clients || clients.length === 0) { section.style.display = "none"; return; }
+    const clientsById = {};
+    clients.forEach((c) => { clientsById[c.id] = c; });
+
+    const { data: obligations } = await supabaseClient
+      .from("client_obligations")
+      .select("*, obligation_types(*)")
+      .eq("active", true);
+
+    let rows = [];
+    (obligations || []).forEach((co) => {
+      const ot = co.obligation_types;
+      const client = clientsById[co.client_id];
+      if (!ot || !client) return;
+      getUpcomingInstances(ot, today, 2).forEach((inst) => {
+        if (inst.domiciliacion_end && inst.domiciliacion_end >= today && inst.domiciliacion_end <= weekEnd) {
+          rows.push({ date: inst.domiciliacion_end, client, obligation: ot, period: inst.period_label, kind: "Domiciliación" });
+        }
+        if (inst.presentacion_end >= today && inst.presentacion_end <= weekEnd) {
+          rows.push({ date: inst.presentacion_end, client, obligation: ot, period: inst.period_label, kind: inst.domiciliacion_end ? "Presentación (NRC)" : "Presentación" });
+        }
+      });
+    });
+
+    const { data: filings } = await supabaseClient
+      .from("obligation_filings")
+      .select("client_id, obligation_type_id, period_label, filed")
+      .eq("filed", true);
+    const filedSet = new Set((filings || []).map((f) => f.client_id + "|" + f.obligation_type_id + "|" + f.period_label));
+    rows = rows.filter((r) => !filedSet.has(r.client.id + "|" + r.obligation.id + "|" + r.period));
+    rows.sort((a, b) => a.date - b.date);
+
+    if (rows.length === 0) { section.style.display = "none"; return; }
+
+    section.style.display = "block";
+    rangeEl.textContent = formatDate(today) + " – " + formatDate(weekEnd);
+
+    const DOW = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+    list.innerHTML = rows.map((r) => {
+      const daysUntil = Math.round((r.date - today) / 86400000);
+      const when = daysUntil === 0 ? "Hoy" : daysUntil === 1 ? "Mañana" : "En " + daysUntil + " días";
+      return `
+        <div class="week-row">
+          <div class="week-day"><span class="dow">${DOW[r.date.getDay()]}</span><span class="num">${r.date.getDate()}</span></div>
+          <div class="week-info">
+            <div class="week-title">${escapeHtml(r.obligation.name)}<span class="badge ${r.kind.startsWith('Domicil') ? 'residente' : 'fisica'}">${escapeHtml(r.kind)}</span></div>
+            <div class="week-sub">${escapeHtml(r.client.name)} · ${escapeHtml(r.period)}</div>
+          </div>
+          <div class="week-right">
+            <span class="week-when${daysUntil <= 1 ? " urgent" : ""}">${when}</span>
+            <button class="btn btn-sm btn-primary week-mark-btn" data-client="${r.client.id}" data-obligation="${r.obligation.id}" data-period="${escapeHtml(r.period)}">Marcar presentado</button>
+          </div>
+        </div>`;
+    }).join("");
+
+    list.querySelectorAll(".week-mark-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Guardando…";
+        const { error } = await supabaseClient
+          .from("obligation_filings")
+          .upsert(
+            [{ client_id: btn.dataset.client, obligation_type_id: btn.dataset.obligation, period_label: btn.dataset.period, filed: true, filed_date: new Date().toISOString().slice(0, 10) }],
+            { onConflict: "client_id,obligation_type_id,period_label" }
+          );
+        if (error) { toast("Error al guardar: " + error.message, "error"); btn.disabled = false; btn.textContent = "Marcar presentado"; return; }
+        toast("Marcado como presentado.");
+        await renderEstaSemana();
+        await renderMonth();
+      });
+    });
   }
 
   function renderListView(rows, container) {
@@ -295,8 +401,8 @@
 
         btn.classList.toggle("filed", newFiled);
         btn.title = newFiled ? "Presentado — pulsa para desmarcar" : "Pendiente — pulsa al presentarlo";
-        document.getElementById("stat-pending").textContent = String(Number(document.getElementById("stat-pending").textContent) + (newFiled ? -1 : 1));
-        document.getElementById("stat-filed").textContent = String(Number(document.getElementById("stat-filed").textContent) + (newFiled ? 1 : -1));
+        await renderMonth();
+        await renderEstaSemana();
       });
     });
   }
