@@ -570,12 +570,6 @@ body.admin-body {
 .client-meta-card dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 700; }
 .client-meta-card dd { margin: 0; font-size: 0.88rem; color: var(--ink); text-align: right; font-weight: 500; }
 
-.client-notes-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
-.client-notes-card textarea {
-  width: 100%; min-height: 72px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px;
-  background: var(--cream); font-family: inherit; font-size: 0.88rem; color: var(--ink); resize: vertical;
-}
-
 .view-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
 .view-tabs button {
   background: none; border: none; font: inherit; cursor: pointer;

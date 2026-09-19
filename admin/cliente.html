@@ -106,20 +106,13 @@
             <dt>Alta</dt><dd id="meta-created">—</dd>
           </dl>
         </div>
-
-        <div class="client-notes-card">
-          <h3 style="margin-bottom:14px;">Notas</h3>
-          <textarea id="client-notes"></textarea>
-          <div style="margin-top:12px;">
-            <button class="btn btn-sm btn-primary" id="save-notes-btn">Guardar notas</button>
-          </div>
-        </div>
       </aside>
 
       <div class="client-main">
         <div class="view-tabs" id="client-tabs">
           <button type="button" class="active" data-tab="obligaciones">Obligaciones</button>
           <button type="button" data-tab="documentos">Documentos</button>
+          <button type="button" data-tab="notas">Notas</button>
           <button type="button" data-tab="historial">Historial</button>
         </div>
 
@@ -214,6 +207,17 @@
                 <p class="sub">Descarga todos los documentos subidos de este cliente (todas las carpetas) en un único archivo comprimido.</p>
               </div>
               <button class="btn btn-sm btn-outline" id="download-all-btn">Descargar toda la documentación</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-notas">
+          <div class="admin-card">
+            <h3 style="margin-bottom:6px;">Notas</h3>
+            <p class="sub" style="margin-bottom:18px;">Anotaciones internas sobre este cliente.</p>
+            <textarea id="client-notes" class="admin-form" style="width:100%; min-height:220px; padding:13px 15px; border:1px solid var(--line); border-radius:var(--radius); background:var(--cream); font-family:inherit; font-size:0.94rem; line-height:1.6;"></textarea>
+            <div style="margin-top:14px;">
+              <button class="btn btn-sm btn-primary" id="save-notes-btn">Guardar notas</button>
             </div>
           </div>
         </div>
